@@ -292,4 +292,66 @@ class ExprTest {
                 INT "3"
         """.trimIndent())
     }
+
+    @Test
+    fun `construct`() {
+        check("""
+            Point {
+                a: 25,
+                b: 32 + 2,
+            }
+        """.trimIndent(), """
+            CONSTRUCT
+              REF "Point"
+              "a"
+                INT "25"
+              "b"
+                BINARY PLUS
+                  INT "32"
+                  INT "2"
+        """.trimIndent())
+    }
+
+    @Test
+    fun `access alone`() {
+        check("""
+            foo.bar
+        """.trimIndent(), """
+            ACCESS "bar"
+              REF "foo"
+        """.trimIndent())
+    }
+
+    @Test
+    fun `access in binary`() {
+        check("""
+            point.x + point.y
+        """.trimIndent(), """
+            BINARY PLUS
+              ACCESS "x"
+                REF "point"
+              ACCESS "y"
+                REF "point"
+        """.trimIndent())
+    }
+
+    @Test
+    fun `headless access alone`() {
+        check("""
+            .foo
+        """.trimIndent(), """
+            ACCESS "foo"
+        """.trimIndent())
+    }
+
+    @Test
+    fun `headless access in call`() {
+        check("""
+            foo(.bar)
+        """.trimIndent(), """
+            CALL
+              REF "foo"
+              ACCESS "bar"
+        """.trimIndent())
+    }
 }

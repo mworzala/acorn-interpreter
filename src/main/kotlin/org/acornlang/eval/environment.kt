@@ -1,8 +1,10 @@
 package org.acornlang
 
 import org.acornlang.eval.FunctionValue
+import org.acornlang.eval.IntValue
 import java.nio.file.Path
 import kotlin.io.path.readText
+import kotlin.system.exitProcess
 
 // One environment exists per execution
 class Environment(
@@ -26,7 +28,7 @@ class Environment(
             fail("main is not a function")
         val result = main()
 
-        println("Exited with code: ${result.stringify()}")
+        exitProcess((result as IntValue).value.toInt())
     }
 
 }

@@ -147,6 +147,33 @@ class AstWhile(
     }
 }
 
+class AstConstruct(
+    val target: AstNode,
+    val fields: List<Pair<String, AstNode>>,
+) : AstNode() {
+
+    override fun <R, P> visit(visitor: AstVisitor<R, P>, param: P) = visitor.visitConstruct(this, param)
+
+    override fun stringify(indent: String): String {
+        return "${indent}CONSTRUCT\n" +
+                target.stringify("$indent  ") +
+                fields.joinToString("") { "$indent  \"${it.first}\"\n${it.second.stringify("$indent    ")}" }
+    }
+}
+
+class AstAccess(
+    // Null in the case of an enum access eg `some_call(.red)`
+    val target: AstNode?,
+    val field: String,
+): AstNode() {
+    override fun <R, P> visit(visitor: AstVisitor<R, P>, param: P) = visitor.visitAccess(this, param)
+
+    override fun stringify(indent: String): String {
+        return "${indent}ACCESS \"$field\"\n" +
+                (target?.stringify("$indent  ") ?: "")
+    }
+}
+
 class AstType(
     val name: String,
 ) : AstNode() {
@@ -176,7 +203,7 @@ class AstPtrType(
 
 class AstLet(
     val name: String,
-    val type: AstNode, //todo type is required for now
+    val type: AstNode?,
     val init: AstNode, //todo init expr is required for now
 ) : AstNode() {
 
@@ -184,7 +211,7 @@ class AstLet(
 
     override fun stringify(indent: String): String {
         return "${indent}LET \"${name}\"\n" +
-                type.stringify("$indent  ") +
+                (type?.stringify("$indent  ") ?: "") +
                 init.stringify("$indent  ")
     }
 }
@@ -364,6 +391,18 @@ abstract class AstVisitor<R, P>(
         return default
     }
 
+    open fun visitConstruct(node: AstConstruct, ctx: P): R {
+        visit(node.target, ctx)
+        for ((_, initNode) in node.fields)
+            visit(initNode, ctx)
+        return default
+    }
+    open fun visitAccess(node: AstAccess, ctx: P): R {
+        if (node.target != null)
+            visit(node.target, ctx)
+        return default
+    }
+
     open fun visitType(node: AstType, ctx: P): R = default
     open fun visitPtrType(node: AstPtrType, ctx: P): R {
         visit(node.inner, ctx)
@@ -373,7 +412,8 @@ abstract class AstVisitor<R, P>(
     // Statements
 
     open fun visitLet(node: AstLet, ctx: P): R {
-        visit(node.type, ctx)
+        if (node.type != null)
+            visit(node.type, ctx)
         visit(node.init, ctx)
         return default
     }

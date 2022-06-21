@@ -21,7 +21,7 @@ enum class TokenType {
     ERROR, EOF;
 
     fun isPrefixOp() = this in listOf(MINUS, BANG)
-    fun isInfixOp() = this in listOf(PLUS, MINUS, STAR, SLASH, EQEQ, BANGEQ, LT, LTEQ, GT, GTEQ, AMPAMP, BARBAR)
+    fun isInfixOp() = this in listOf(PLUS, MINUS, STAR, SLASH, EQEQ, BANGEQ, LT, LTEQ, GT, GTEQ, AMPAMP, BARBAR, DOT)
     fun isPostfixOp() = this in listOf(LBRACKET, LPAREN)
 }
 
@@ -106,11 +106,11 @@ class Lexer(
                 '/' -> {
                     // If there are two slashes is a comment, ignore until end of line
                     if (this.peek1() == '/') {
-                        while (this.peek0() != '\n' && !this.atEnd()) {
-                            this.advance();
-                        }
-                        break;
-                    } else return;
+                        do {
+                            this.advance()
+                        } while (!this.atEnd() && this.peek0() != '\n')
+                        continue
+                    } else return
                 }
                 else -> return
             }
@@ -173,7 +173,7 @@ class Lexer(
             ':' -> return this.newToken(TokenType.COLON)
             ',' -> return this.newToken(TokenType.COMMA)
             '.' -> return this.newToken(TokenType.DOT)
-            else -> fail("Unexpected character: $c")
+            else -> fail("Unexpected character: ${c.toInt()} '${c}' '${source.substring(cursor)}'")
             // @formatter:on
         }
     }

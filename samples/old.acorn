@@ -1,0 +1,29 @@
+
+foreign fn puts(s: *i8) i32;
+
+struct Addition {
+    a: i32,
+    b: i32,
+}
+
+fn main() i32 {
+    puts("Hello, world");
+
+    let addition: Addition = Addition {
+        a: 1,
+        b: 2,
+    };
+    add(addition)
+}
+
+fn fib(n: i32) i32 {
+    if n < 2 {
+        n
+    } else {
+        fib(n - 1) + fib(n - 2)
+    }
+}
+
+fn add(addition: Addition) i32 {
+    addition.a + addition.b
+}

@@ -71,7 +71,8 @@ class Parser(
         val next = next()
         var lhs: AstNode = when {
             next.type == TokenType.NUMBER -> AstInt(next.text.toLong())
-            next.type == TokenType.IDENT -> AstRef(next.text)
+            next.type == TokenType.IDENT -> exprRefOrConstruct(AstRef(next.text))
+            next.type == TokenType.DOT -> AstAccess(null, expect(TokenType.IDENT).text)
             next.type == TokenType.STRING -> AstString(next.text.substring(1, next.text.length - 1))
             next.type == TokenType.TRUE -> AstBool(true)
             next.type == TokenType.FALSE -> AstBool(false)
@@ -120,6 +121,11 @@ class Parser(
 
             next() // Eat the operator token
 
+            if (op == TokenType.DOT) {
+                lhs = AstAccess(lhs, expect(TokenType.IDENT).text)
+                continue
+            }
+
             val rhs = expr(rbp)
 
             lhs = AstBinary(opToken, lhs, rhs)
@@ -143,6 +149,7 @@ class Parser(
             TokenType.LT, TokenType.LTEQ,
             TokenType.GT, TokenType.GTEQ -> Pair(5, 6)
             TokenType.AMPAMP, TokenType.BARBAR -> Pair(7, 8)
+            TokenType.DOT -> Pair(9, 10)
             else -> fail("Unknown operator $op")
         }
     }
@@ -226,6 +233,27 @@ class Parser(
         return AstCall(target, args)
     }
 
+    private fun exprRefOrConstruct(ident: AstNode): AstNode {
+        if (!match(TokenType.LBRACE))
+            return ident
+
+        // We are now in a construct block
+
+        val fields = mutableListOf<Pair<String, AstNode>>()
+        while (peek().type != TokenType.RBRACE) {
+            val nameToken = expect(TokenType.IDENT)
+            expect(TokenType.COLON)
+            fields.add(nameToken.text to expr(0))
+            if (peek().type == TokenType.RBRACE)
+                break
+            expect(TokenType.COMMA)
+        }
+
+        expect(TokenType.RBRACE)
+
+        return AstConstruct(ident, fields)
+    }
+
     private fun typeExpr(): AstNode {
         return if (peek(TokenType.STAR)) {
             next() // Eat the star
@@ -247,8 +275,9 @@ class Parser(
         val name = expect(TokenType.IDENT).text
 
         // Type expression
-        expect(TokenType.COLON)
-        val type = typeExpr()
+        var type: AstNode? = null
+        if (match(TokenType.COLON))
+            type = typeExpr()
 
         // Init expr
         expect(TokenType.EQ)

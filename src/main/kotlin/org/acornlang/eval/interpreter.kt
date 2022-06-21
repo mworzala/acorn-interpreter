@@ -43,11 +43,17 @@ class Interpreter(
             }
 
             override fun visitStructDecl(node: AstStructDecl, param: String): Value? {
-                TODO("not implemented")
+                if (node.name != param)
+                    return null
+                val structType = StructType.from(this@Interpreter, node)
+                return TypeValue(this@Interpreter, structType)
             }
 
             override fun visitEnumDecl(node: AstEnumDecl, param: String): Value? {
-                TODO("not implemented")
+                if (node.name != param)
+                    return null
+                val enumType = EnumType.from(this@Interpreter, node)
+                return TypeValue(this@Interpreter, enumType)
             }
         }
 
@@ -62,6 +68,7 @@ class Interpreter(
     // Internal
 
     fun evaluateBlockInScope(block: AstBlock, context: Context): Value {
+        println(block.stringify())
         val evalutor = BlockEvaluator(this)
         return evalutor.visitBlock(block, context)
     }
@@ -77,14 +84,36 @@ class Interpreter(
     }
 
     override fun get(name: String): Value? {
-        return findDeclByName(name)
+        return when (name) {
+            "i8" -> TypeValue(this, Type.i8)
+            "i16" -> TypeValue(this, Type.i16)
+            "i32" -> TypeValue(this, Type.i32)
+            "i64" -> TypeValue(this, Type.i64)
+            "bool" -> TypeValue(this, Type.bool)
+            else -> findDeclByName(name)
+        }
+    }
+
+    fun getType(ast: AstNode): Type {
+        return when (ast) {
+            is AstType -> getType(ast)
+            is AstPtrType -> getType(ast)
+            else -> fail("Expected type")
+        }
+    }
+
+    fun getType(ast: AstPtrType): Type = PtrType(getType(ast.inner))
+
+    fun getType(ast: AstType): Type {
+        val type = get(ast.name) as? TypeValue
+        return type?.inner ?: fail("Type ${ast.name} not found")
     }
 
 
 }
 
 private class BlockEvaluator(owner: Interpreter) : AstVisitor<Value, Context>(owner.NULL) {
-    override fun visitInt(node: AstInt, ctx: Context) = IntValue(ctx.owner, node.value, Type.from(node.value.toLong()) as IntegerType)
+    override fun visitInt(node: AstInt, ctx: Context) = IntValue(ctx.owner, node.value, Type.from(node.value.toLong()) as IntType)
     override fun visitString(node: AstString, ctx: Context) = StringValue(ctx.owner, node.value)
     override fun visitBool(node: AstBool, ctx: Context) = BoolValue(ctx.owner, node.value)
     override fun visitRef(node: AstRef, ctx: Context): Value =
@@ -97,13 +126,13 @@ private class BlockEvaluator(owner: Interpreter) : AstVisitor<Value, Context>(ow
         val rhsType = rhs.type
 
         // Ensure both are integers
-        if (lhs !is IntValue || lhsType !is IntegerType)
+        if (lhs !is IntValue || lhsType !is IntType)
             throw TypeError("Expected integer type, found $lhsType")
-        if (rhs !is IntValue || rhsType !is IntegerType)
+        if (rhs !is IntValue || rhsType !is IntType)
             throw TypeError("Expected integer type, found $rhsType")
 
         // Create a common type with the smallest number of bits to fit both
-        val resultType = IntegerType(max(lhsType.bits, rhsType.bits))
+        val resultType = IntType(max(lhsType.bits, rhsType.bits))
 
         // Perform the operation
         val result = when (node.op.type) {
@@ -129,9 +158,9 @@ private class BlockEvaluator(owner: Interpreter) : AstVisitor<Value, Context>(ow
                 val rhsType = rhs.type
 
                 // Ensure both are integers
-                if (lhs !is IntValue || lhsType !is IntegerType)
+                if (lhs !is IntValue || lhsType !is IntType)
                     throw TypeError("Expected integer type, found $lhsType")
-                if (rhs !is IntValue || rhsType !is IntegerType)
+                if (rhs !is IntValue || rhsType !is IntType)
                     throw TypeError("Expected integer type, found $rhsType")
 
                 // Perform the operation
@@ -210,7 +239,36 @@ private class BlockEvaluator(owner: Interpreter) : AstVisitor<Value, Context>(ow
             throw TypeError("Expected function, found ${target.type}")
 
         val args = node.args.map { visit(it, ctx) }
-        return target.invoke(args)
+        val result = target.invoke(args)
+        return result
+    }
+
+    override fun visitConstruct(node: AstConstruct, ctx: Context): Value {
+        val typeValue = visit(node.target, ctx)
+        if (typeValue !is TypeValue)
+            throw TypeError("Expected type, found ${typeValue.type}")
+        val structType = typeValue.inner
+        if (structType !is StructType)
+            throw TypeError("Expected struct type, found ${typeValue.inner}")
+        val value = StructValue(ctx.owner, structType)
+        for ((name, init) in node.fields)
+            value.set(name, visit(init, ctx))
+        return value
+    }
+
+    override fun visitAccess(node: AstAccess, ctx: Context): Value {
+        val target = visit(node.target!!, ctx)
+        if (target is StructValue)
+            return target.get(node.field)
+        if (target !is TypeValue)
+            throw TypeError("Expected struct, enum, found ${target.type}")
+        val type = target.inner
+        if (type !is EnumType)
+            throw TypeError("Expected enum, found ${target.inner}")
+        val value = type.cases.indexOf(node.field)
+        if (value == -1)
+            throw TypeError("Unknown enum case '${node.field}' in ${type.name}")
+        return EnumValue(ctx.owner, type, value)
     }
 
     override fun visitBlock(node: AstBlock, ctx: Context): Value {
@@ -224,11 +282,29 @@ private class BlockEvaluator(owner: Interpreter) : AstVisitor<Value, Context>(ow
     override fun visitLet(node: AstLet, ctx: Context): Value {
         var init = visit(node.init, ctx)
 
-        val type = Type.from(node.type)
-        if (type != init.type)
-            init = init.coerceType(to=type)
+        if (node.type != null) {
+            val type = visit(node.type, ctx)
+            if (type !is TypeValue)
+                throw TypeError("Expected type, found ${type.type}")
+            if (type != init.type)
+                init = init.coerceType(to=type.inner)
+        }
 
         ctx.define(node.name, init)
         return default
+    }
+
+    override fun visitPtrType(node: AstPtrType, ctx: Context): Value {
+        val inner = visit(node.inner, ctx)
+        if (inner !is TypeValue)
+            throw TypeError("Expected type, found ${inner.type}")
+        return TypeValue(ctx.owner, PtrType(inner.inner))
+    }
+
+    override fun visitType(node: AstType, ctx: Context): Value {
+        val type = ctx.get(node.name)
+        if (type !is TypeValue)
+            throw TypeError("Expected type, found ${type?.type}")
+        return type
     }
 }

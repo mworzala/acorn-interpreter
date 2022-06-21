@@ -1,10 +1,10 @@
 package org.acornlang.eval
 
-import com.sun.jdi.IntegerValue
 import org.acornlang.Interpreter
 import org.acornlang.ast.AstBlock
 import org.acornlang.ast.AstFnParam
 import org.acornlang.ast.AstNamedFnDecl
+import org.acornlang.ast.AstStructDecl
 import org.acornlang.fail
 import java.lang.foreign.Linker
 import java.lang.foreign.SegmentAllocator
@@ -16,7 +16,7 @@ abstract class Value(
     companion object {
         fun fromAddressable(owner: Interpreter, type: Type, value: Any): Value {
             return when (type) {
-                is IntegerType -> {
+                is IntType -> {
                     IntValue(
                         owner, when (type.bits) {
                             8 -> (value as Byte).toLong()
@@ -34,7 +34,8 @@ abstract class Value(
     }
 
     abstract val type: Type
-    open fun coerceType(to: Type): Value = throw TypeCoercionError(type, to)
+    open fun coerceType(to: Type): Value =
+        if (type == to) this else throw TypeCoercionError(type, to)
 
     // Convert the object to a native addressable value
     open fun toAddressable(alloc: SegmentAllocator): Any = throw UnsupportedOperationException()
@@ -48,17 +49,18 @@ class NullValue(
     owner: Interpreter,
 ) : Value(owner) {
     override val type: Type get() = TODO("Typeof null")
+
 }
 
 class IntValue(
     owner: Interpreter,
     val value: Long,
-    override val type: IntegerType,
+    override val type: IntType,
 ) : Value(owner) {
 
     override fun coerceType(to: Type): Value {
         val newType = type.coerce(to)
-        return IntValue(owner, value, newType as IntegerType)
+        return IntValue(owner, value, newType as IntType)
     }
 
     override fun toAddressable(alloc: SegmentAllocator): Any {
@@ -72,6 +74,25 @@ class IntValue(
     }
 
     override fun stringify() = "$value"
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as IntValue
+
+        if (value != other.value) return false
+        if (type != other.type) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = value.hashCode()
+        result = 31 * result + type.hashCode()
+        return result
+    }
+
+
 }
 
 class StringValue(
@@ -86,6 +107,22 @@ class StringValue(
     }
 
     override fun stringify() = "\"$value\""
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as StringValue
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return value.hashCode()
+    }
+
+
 }
 
 class BoolValue(
@@ -97,6 +134,22 @@ class BoolValue(
     override fun toAddressable(alloc: SegmentAllocator) = value
 
     override fun stringify() = "$value"
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as BoolValue
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return value.hashCode()
+    }
+
+
 }
 
 abstract class FunctionValue(
@@ -120,10 +173,10 @@ private class FunctionValueImpl(
     val ast: AstNamedFnDecl,
 ) : FunctionValue(owner) {
 
-    override val type: Type = FnType.from(ast)
+    override val type: Type = FnType.from(owner, ast)
 
     override fun invoke(args: List<Value>): Value {
-        val retTy: Type = ast.retType?.let(Type::from) ?: Type.void
+        val retTy: Type = ast.retType?.let(owner::getType) ?: Type.void
 
         val ctx = ContextImpl(owner, owner, retTy)
         // Add arguments to scope
@@ -141,7 +194,7 @@ private class ForeignFunctionValueImpl(
     owner: Interpreter,
     val ast: AstNamedFnDecl,
 ) : FunctionValue(owner) {
-    override val type: FnType = FnType.from(ast)
+    override val type: FnType = FnType.from(owner, ast)
 
     private val handle: MethodHandle
 
@@ -174,4 +227,117 @@ private class ForeignFunctionValueImpl(
 
         return fromAddressable(owner, type.returnType, result)
     }
+
+
+}
+
+class TypeValue(
+    owner: Interpreter,
+    val inner: Type,
+) : Value(owner) {
+    override val type: Type get() = Type.type
+
+    override fun toAddressable(alloc: SegmentAllocator): Any {
+        TODO("Not valid")
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as TypeValue
+
+        if (inner != other.inner) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return inner.hashCode()
+    }
+
+
+}
+
+class StructValue(
+    owner: Interpreter,
+    override val type: StructType,
+) : Value(owner) {
+
+    private val fields: MutableList<Value> = type.fieldTypes.map {
+        it.defaultValue(owner)
+    }.toMutableList()
+
+    fun set(field: String, value: Value) {
+        val index = type.fieldNames.indexOf(field)
+        if (index == -1)
+            fail("No such field '$field' on ${type.name}")
+        fields[index] = value
+    }
+
+    fun get(field: String): Value {
+        val index = type.fieldNames.indexOf(field)
+        if (index == -1)
+            fail("No such field '$field' on ${type.name}")
+        return fields[index]
+    }
+
+    override fun toAddressable(alloc: SegmentAllocator): Any {
+        TODO("toAddressable on struct value")
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as StructValue
+
+        if (type != other.type) return false
+        if (fields != other.fields) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = type.hashCode()
+        result = 31 * result + fields.hashCode()
+        return result
+    }
+
+    //todo this becomes a TypeValue
+    // Then there is a separate type for structs
+
+
+}
+
+class EnumValue(
+    owner: Interpreter,
+    override val type: EnumType,
+    val value: Int,
+) : Value(owner) {
+
+    override fun toAddressable(alloc: SegmentAllocator): Any {
+        //todo this is actually doable. As long as the integer representing is <= i32, it is a valid c enum.
+        TODO("toAddressable on enum value")
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as EnumValue
+
+        if (type != other.type) return false
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = type.hashCode()
+        result = 31 * result + value
+        return result
+    }
+
+
 }

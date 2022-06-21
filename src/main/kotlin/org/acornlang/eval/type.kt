@@ -1,5 +1,6 @@
 package org.acornlang.eval
 
+import org.acornlang.Interpreter
 import org.acornlang.ast.*
 import org.acornlang.fail
 import java.lang.foreign.FunctionDescriptor
@@ -17,26 +18,13 @@ class TypeCoercionError(from: Type, to: Type) :
 interface Type {
     companion object {
         val void: Type = VoidType()
+        val type: Type = TypeType()
 
-        val i8: Type = IntegerType(8)
-        val i16: Type = IntegerType(16)
-        val i32: Type = IntegerType(32)
-        val i64: Type = IntegerType(64)
-        val bool: Type = BooleanType()
-
-        fun from(node: AstNode): Type = when (node) {
-            is AstPtrType -> PtrType(from(node.inner))
-            is AstType -> when (node.name) {
-                "i8" -> i8
-                "i16" -> i16
-                "i32" -> i32
-                "i64" -> i64
-                "bool" -> bool
-                else -> fail("Unknown type: ${node.name}")
-            }
-
-            else -> fail("unexpected type node: ${node::class.simpleName}")
-        }
+        val i8: IntType = IntType(8)
+        val i16: IntType = IntType(16)
+        val i32: IntType = IntType(32)
+        val i64: IntType = IntType(64)
+        val bool: Type = BoolType()
 
         fun from(i: Long): Type = when {
             abs(i) < Byte.MAX_VALUE -> i8
@@ -51,21 +39,43 @@ interface Type {
     val name: String
 
     fun coerce(to: Type): Type = throw TypeCoercionError(this, to)
+
+    fun defaultValue(owner: Interpreter): Value
 }
 
-class IntegerType(
+class TypeType : Type {
+    override val name: String
+        get() = "type"
+
+    override fun defaultValue(owner: Interpreter): Value {
+        TODO("Not yet implemented")
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other is BoolType
+    }
+
+    override fun hashCode(): Int = "type".hashCode()
+
+    override fun toString(): String = name
+
+}
+
+class IntType(
     val bits: Int
 ) : Type {
     override val name: String = "i$bits"
 
     override fun coerce(to: Type): Type {
-        if (to is IntegerType && bits < to.bits)
+        if (to is IntType && bits < to.bits)
             return to
         return super.coerce(to)
     }
 
+    override fun defaultValue(owner: Interpreter) = IntValue(owner, 0, Type.i8)
+
     override fun equals(other: Any?): Boolean {
-        return other is IntegerType && other.bits == bits
+        return other is IntType && other.bits == bits
     }
 
     override fun hashCode(): Int = bits
@@ -73,12 +83,14 @@ class IntegerType(
     override fun toString(): String = name
 }
 
-private class BooleanType : Type {
+private class BoolType : Type {
 
     override val name: String = "bool"
 
+    override fun defaultValue(owner: Interpreter) = BoolValue(owner, false)
+
     override fun equals(other: Any?): Boolean {
-        return other is BooleanType
+        return other is BoolType
     }
 
     override fun hashCode(): Int = "bool".hashCode()
@@ -90,6 +102,9 @@ private class VoidType : Type {
 
     override val name: String = "void"
 
+    override fun defaultValue(owner: Interpreter) =
+        throw IllegalStateException("Void type does not have a value.")
+
     override fun equals(other: Any?): Boolean {
         return other is VoidType
     }
@@ -99,13 +114,17 @@ private class VoidType : Type {
     override fun toString(): String = name
 }
 
-private class PtrType(
+class PtrType(
     val inner: Type,
 ) : Type {
     override val isPointer: Boolean get() = true
 
     override val name: String
         get() = "*${inner.name}"
+
+    override fun defaultValue(owner: Interpreter): Value {
+        TODO("Not yet implemented")
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -132,12 +151,16 @@ class FnType(
     val params: List<Type>,
 ) : Type {
     companion object {
-        fun from(node: AstNamedFnDecl): FnType {
+        fun from(owner: Interpreter, node: AstNamedFnDecl): FnType {
             return FnType(
-                node.retType?.let(Type::from) ?: Type.void,
-                node.params.map { (it as AstFnParam).type }.map(Type::from)
+                node.retType?.let(owner::getType) ?: Type.void,
+                node.params.map { (it as AstFnParam).type }.map(owner::getType)
             )
         }
+    }
+
+    override fun defaultValue(owner: Interpreter): Value {
+        TODO("No default for function type, maybe it should be a nullptr? Probably just an error though")
     }
 
     val arity: Int get() = params.size
@@ -176,11 +199,94 @@ class FnType(
     override fun toString(): String = name
 }
 
+class StructType(
+    val structName: String,
+    val fieldNames: List<String>,
+    val fieldTypes: List<Type>,
+) : Type {
+    companion object {
+        fun from(owner: Interpreter, node: AstStructDecl): StructType {
+            return StructType(
+                node.name,
+                node.fields.map { (it as AstStructField).name },
+                node.fields.map { (it as AstStructField).type }.map(owner::getType)
+            )
+        }
+    }
+
+    override val name: String
+        get() = "struct $structName(${fieldNames.mapIndexed { i, name -> "${name}: ${fieldTypes[i]}" }.joinToString(", ")})"
+
+    override fun defaultValue(owner: Interpreter) =
+        throw IllegalStateException("TODO: This should be valid, and should fill all values with their default. The problem, is that we need the AST node. Probably StructType needs to keep track of it's AST node.")
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as StructType
+
+        if (structName != other.structName) return false
+        if (fieldNames != other.fieldNames) return false
+        if (fieldTypes != other.fieldTypes) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = structName.hashCode()
+        result = 31 * result + fieldNames.hashCode()
+        result = 31 * result + fieldTypes.hashCode()
+        return result
+    }
+
+    override fun toString(): String = name
+}
+
+class EnumType(
+    val enumName: String,
+    val cases: List<String>,
+) : Type {
+    companion object {
+        fun from(owner: Interpreter, node: AstEnumDecl): EnumType {
+            return EnumType(
+                node.name,
+                node.cases.map { (it as AstEnumCase).name }
+            )
+        }
+    }
+
+    override val name: String
+        get() = "enum $enumName(${cases.joinToString(", ")})"
+
+    override fun defaultValue(owner: Interpreter): Value {
+        TODO("Not yet implemented")
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as EnumType
+
+        if (enumName != other.enumName) return false
+        if (cases != other.cases) return false
+
+        return true
+    }
+    override fun hashCode(): Int {
+        var result = enumName.hashCode()
+        result = 31 * result + cases.hashCode()
+        return result
+    }
+
+    override fun toString(): String = name
+}
 
 
 private fun Type.toMemoryLayout(): MemoryLayout {
     return when {
-        this is IntegerType -> when (bits) {
+        this is IntType -> when (bits) {
             8 -> ValueLayout.JAVA_BYTE
             16 -> ValueLayout.JAVA_SHORT
             32 -> ValueLayout.JAVA_INT
@@ -188,7 +294,7 @@ private fun Type.toMemoryLayout(): MemoryLayout {
             else -> fail("Unsupported integer size in foreign function: $bits")
         }
 
-        this is BooleanType -> ValueLayout.JAVA_BOOLEAN
+        this is BoolType -> ValueLayout.JAVA_BOOLEAN
         this.isPointer -> ValueLayout.ADDRESS
         else -> fail("unexpected type: $this")
     }

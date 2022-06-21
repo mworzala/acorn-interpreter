@@ -19,15 +19,13 @@ fn color_to_string(color: Color) *i8 {
         "green"
     } else if color == Color.blue {
         "blue"
-    } else {
-        "unknown"
     }
 }
 
 fn main() i32 {
     puts("Hello, world");
 
-    let color_str = color_to_string(Color.green);
+    let color_str = color_to_string(.red);
     puts(color_str);
 
     let addition = Addition {
