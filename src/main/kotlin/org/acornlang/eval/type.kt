@@ -18,6 +18,9 @@ val Type.Companion.empty: Type get() = TupleType(listOf())
 abstract class Type {
     companion object;
 
+    open val isMut: Boolean get() = false
+    open fun asMut(): Type? = null
+
     abstract fun default(context: Context): Value
 
     abstract override fun toString(): String
@@ -28,13 +31,14 @@ class VoidType : Type() {
     override fun default(context: Context) = throw RuntimeException("void has no default value")
 
     override fun toString() = "void"
-    override fun equals(other: Any?) = this === other || other is BoolType
+    override fun equals(other: Any?) = this === other || other is VoidType
     override fun hashCode() = javaClass.hashCode()
 }
 
 
 class IntType(
-    val bits: Int
+    val bits: Int,
+    override val isMut: Boolean = false,
 ) : Type() {
 
     companion object {
@@ -47,6 +51,8 @@ class IntType(
         }
     }
 
+    override fun asMut() = IntType(bits, true)
+
     override fun default(context: Context) = IntValue(context, this, 0)
 
     override fun toString() = "i$bits"
@@ -54,35 +60,43 @@ class IntType(
     override fun hashCode() = Objects.hash(javaClass, bits)
 }
 
-class BoolType : Type() {
+class BoolType(
+    override val isMut: Boolean = false,
+) : Type() {
 
-    override fun default(context: Context) = BoolValue(context, false)
+    override fun asMut() = BoolType(true)
+
+    override fun default(context: Context) = BoolValue(context, bool, false)
 
     override fun toString() = "bool"
     override fun equals(other: Any?) = this === other || other is BoolType
     override fun hashCode() = javaClass.hashCode()
 }
 
-class StrType : Type() {
+class StrType(
+    override val isMut: Boolean = false,
+) : Type() {
 
-    override fun default(context: Context) = StrValue(context, "")
+    override fun asMut() = StrType(true)
+
+    override fun default(context: Context) = StrValue(context, str, "")
 
     override fun toString() = "str"
     override fun equals(other: Any?) = this === other || other is StrType
     override fun hashCode() = javaClass.hashCode()
 }
 
-//class PtrType(
-//    val type: Type
-//) : Type() {
-//
-//    override fun default(context: Context) = throw RuntimeException("ptr has no default value")
-//
-//    override fun toString() = "*$type"
-//    override fun equals(other: Any?) =
-//        this === other || (other is PtrType && type == other.type)
-//    override fun hashCode() = Objects.hash(javaClass, type)
-//}
+class RefType(
+    val type: Type
+) : Type() {
+
+    override fun default(context: Context) = RefValue(context, this, type.default(context))
+
+    override fun toString() = "&$type"
+    override fun equals(other: Any?) =
+        this === other || (other is RefType && type == other.type)
+    override fun hashCode() = Objects.hash(javaClass, type)
+}
 
 class TypeType : Type() {
 
@@ -121,7 +135,10 @@ class TupleType(
 class StructType(
     val fieldNames: List<String>,
     val fieldTypes: List<Type>,
+    override val isMut: Boolean = false,
 ) : Type() {
+
+    override fun asMut() = StructType(fieldNames, fieldTypes, true)
 
     override fun default(context: Context) = StructValue(context, this)
 
@@ -133,7 +150,10 @@ class StructType(
 
 class EnumType(
     val caseNames: List<String>,
+    override val isMut: Boolean = false,
 ) : Type() {
+
+    override fun asMut() = EnumType(caseNames, true)
 
     override fun default(context: Context) = EnumValue(context, this, 0)
 

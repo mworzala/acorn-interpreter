@@ -15,9 +15,9 @@ class AstInt(val value: Long) : AstNode() {
     override fun stringify(indent: String): String = "${indent}INT \"$value\"\n"
 }
 
-class AstRef(val name: String) : AstNode() {
+class AstIdent(val name: String) : AstNode() {
 
-    override fun <R, P> visit(visitor: AstVisitor<R, P>, param: P) = visitor.visitRef(this, param)
+    override fun <R, P> visit(visitor: AstVisitor<R, P>, param: P) = visitor.visitIdent(this, param)
 
     override fun stringify(indent: String): String = "${indent}REF \"$name\"\n"
 }
@@ -61,6 +61,18 @@ class AstUnary(
     override fun stringify(indent: String): String {
         return "${indent}UNARY ${op.type}\n" +
                 operand.stringify("$indent  ")
+    }
+}
+
+class AstMakeRef(
+    val target: AstNode,
+) : AstNode() {
+
+    override fun <R, P> visit(visitor: AstVisitor<R, P>, param: P) = visitor.visitMakeRef(this, param)
+
+    override fun stringify(indent: String): String {
+        return "${indent}MAKE_REF\n" +
+                target.stringify("$indent  ")
     }
 }
 
@@ -174,6 +186,19 @@ class AstAccess(
     }
 }
 
+class AstAssign(
+    val target: AstNode,
+    val value: AstNode,
+): AstNode() {
+    override fun <R, P> visit(visitor: AstVisitor<R, P>, param: P) = visitor.visitAssign(this, param)
+
+    override fun stringify(indent: String): String {
+        return "${indent}ASSIGN\n" +
+                target.stringify("$indent  ") +
+                value.stringify("$indent  ")
+    }
+}
+
 class AstType(
     val name: String,
 ) : AstNode() {
@@ -182,6 +207,18 @@ class AstType(
 
     override fun stringify(indent: String): String {
         return "${indent}TYPE \"${name}\"\n"
+    }
+}
+
+class AstRefType(
+    val inner: AstNode,
+) : AstNode() {
+
+    override fun <R, P> visit(visitor: AstVisitor<R, P>, param: P) = visitor.visitRefType(this, param)
+
+    override fun stringify(indent: String): String {
+        return "${indent}REF_TYPE\n" +
+                inner.stringify("$indent  ")
     }
 }
 
@@ -202,6 +239,7 @@ class AstPtrType(
 // AST Nodes related to statements
 
 class AstLet(
+    val mut: Boolean,
     val name: String,
     val type: AstNode?,
     val init: AstNode, //todo init expr is required for now
@@ -210,7 +248,7 @@ class AstLet(
     override fun <R, P> visit(visitor: AstVisitor<R, P>, param: P) = visitor.visitLet(this, param)
 
     override fun stringify(indent: String): String {
-        return "${indent}LET \"${name}\"\n" +
+        return "${indent}LET ${if (mut) "mut " else ""}\"${name}\"\n" +
                 (type?.stringify("$indent  ") ?: "") +
                 init.stringify("$indent  ")
     }
@@ -222,7 +260,7 @@ class AstLet(
 
 class AstConstDecl(
     val name: String,
-    val type: AstNode, //todo type is required for now
+    val type: AstNode?,
     val init: AstNode, //todo init expr is required for now
 ) : AstNode() {
 
@@ -230,7 +268,7 @@ class AstConstDecl(
 
     override fun stringify(indent: String): String {
         return "${indent}CONST \"${name}\"\n" +
-                type.stringify("$indent  ") +
+                (type?.stringify("$indent  ") ?: "") +
                 init.stringify("$indent  ")
     }
 }
@@ -329,6 +367,18 @@ class AstModule(
     }
 }
 
+// Builtins
+
+class AstImport(
+    val module: String,
+): AstNode() {
+    override fun <R, P> visit(visitor: AstVisitor<R, P>, param: P) = visitor.visitImport(this, param)
+
+    override fun stringify(indent: String): String {
+        return "${indent}IMPORT \"$module\"\n"
+    }
+}
+
 
 
 abstract class AstVisitor<R, P>(
@@ -343,7 +393,7 @@ abstract class AstVisitor<R, P>(
     // Expressions
 
     open fun visitInt(node: AstInt, ctx: P): R = default
-    open fun visitRef(node: AstRef, ctx: P): R = default
+    open fun visitIdent(node: AstIdent, ctx: P): R = default
     open fun visitString(node: AstString, ctx: P): R = default
     open fun visitBool(node: AstBool, ctx: P): R = default
 
@@ -354,6 +404,10 @@ abstract class AstVisitor<R, P>(
     }
     open fun visitUnary(node: AstUnary, ctx: P): R {
         visit(node.operand, ctx)
+        return default
+    }
+    open fun visitMakeRef(node: AstMakeRef, ctx: P): R {
+        visit(node.target, ctx)
         return default
     }
 
@@ -406,8 +460,18 @@ abstract class AstVisitor<R, P>(
         return default
     }
 
+    open fun visitAssign(node: AstAssign, ctx: P): R {
+        visit(node.target, ctx)
+        visit(node.value, ctx)
+        return default
+    }
+
     open fun visitType(node: AstType, ctx: P): R = default
     open fun visitPtrType(node: AstPtrType, ctx: P): R {
+        visit(node.inner, ctx)
+        return default
+    }
+    open fun visitRefType(node: AstRefType, ctx: P): R {
         visit(node.inner, ctx)
         return default
     }
@@ -424,7 +488,8 @@ abstract class AstVisitor<R, P>(
     // Declarations
 
     open fun visitConstDecl(node: AstConstDecl, ctx: P): R {
-        visit(node.type, ctx)
+        if (node.type != null)
+            visit(node.type, ctx)
         visit(node.init, ctx)
         return default
     }
@@ -465,6 +530,12 @@ abstract class AstVisitor<R, P>(
     open fun visitModule(node: AstModule, ctx: P): R {
         for (decl in node.decls)
             visit(decl, ctx)
+        return default
+    }
+
+    // Builtins
+
+    open fun visitImport(node: AstImport, ctx: P): R {
         return default
     }
 

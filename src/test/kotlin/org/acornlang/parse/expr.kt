@@ -354,4 +354,36 @@ class ExprTest {
               ACCESS "bar"
         """.trimIndent())
     }
+
+    @Test
+    fun `basic assign`() {
+        check("""
+            a = 1
+        """.trimIndent(), """
+            ASSIGN
+              REF "a"
+              INT "1"
+        """.trimIndent())
+    }
+
+    @Test
+    fun `assign to access`() {
+        check("""
+            a.b = 1
+        """.trimIndent(), """
+            ASSIGN
+              ACCESS "b"
+                REF "a"
+              INT "1"
+        """.trimIndent())
+    }
+
+    @Test
+    fun `fn builtin`() {
+        check("""
+            @import("./test.acorn")
+        """.trimIndent(), """
+            IMPORT "./test.acorn"
+        """.trimIndent())
+    }
 }

@@ -9,11 +9,11 @@ enum class TokenType {
     MINUS, PLUS, STAR, SLASH,
     EQ, EQEQ, BANG, BANGEQ,
     LT, LTEQ, GT, GTEQ,
-    AMPAMP, BARBAR,
-    SEMICOLON, COLON, COMMA, DOT,
+    AMP, AMPAMP, BARBAR,
+    SEMICOLON, COLON, COMMA, DOT, AT,
 
     CONST, ELSE, ENUM, FN,
-    FOREIGN, IF, LET, RETURN,
+    FOREIGN, IF, LET, MUT, RETURN,
     STRUCT, WHILE, TRUE, FALSE,
 
     NUMBER, STRING, IDENT,
@@ -21,7 +21,7 @@ enum class TokenType {
     ERROR, EOF;
 
     fun isPrefixOp() = this in listOf(MINUS, BANG)
-    fun isInfixOp() = this in listOf(PLUS, MINUS, STAR, SLASH, EQEQ, BANGEQ, LT, LTEQ, GT, GTEQ, AMPAMP, BARBAR, DOT)
+    fun isInfixOp() = this in listOf(PLUS, MINUS, STAR, SLASH, EQEQ, BANGEQ, LT, LTEQ, GT, GTEQ, AMPAMP, BARBAR, DOT, EQ)
     fun isPostfixOp() = this in listOf(LBRACKET, LPAREN)
 }
 
@@ -167,12 +167,13 @@ class Lexer(
             '!' -> return this.newToken(if (this.match('=')) TokenType.BANGEQ else TokenType.BANG)
             '<' -> return this.newToken(if (this.match('=')) TokenType.LTEQ else TokenType.LT)
             '>' -> return this.newToken(if (this.match('=')) TokenType.GTEQ else TokenType.GT)
-            '&' -> return this.newToken(if (this.match('&')) TokenType.AMPAMP else TokenType.ERROR)
+            '&' -> return this.newToken(if (this.match('&')) TokenType.AMPAMP else TokenType.AMP)
             '|' -> return this.newToken(if (this.match('|')) TokenType.BARBAR else TokenType.ERROR)
             ';' -> return this.newToken(TokenType.SEMICOLON)
             ':' -> return this.newToken(TokenType.COLON)
             ',' -> return this.newToken(TokenType.COMMA)
             '.' -> return this.newToken(TokenType.DOT)
+            '@' -> return this.newToken(TokenType.AT)
             else -> fail("Unexpected character: ${c.toInt()} '${c}' '${source.substring(cursor)}'")
             // @formatter:on
         }
@@ -207,6 +208,7 @@ class Lexer(
             }
             'i' -> return checkKeyword(1, 1, "f", TokenType.IF);
             'l' -> return checkKeyword(1, 2, "et", TokenType.LET);
+            'm' -> return checkKeyword(1, 2, "ut", TokenType.MUT);
             'r' -> return checkKeyword(1, 5, "eturn", TokenType.RETURN);
             's' -> return checkKeyword(1, 5, "truct", TokenType.STRUCT);
             't' -> return checkKeyword(1, 3, "rue", TokenType.TRUE);

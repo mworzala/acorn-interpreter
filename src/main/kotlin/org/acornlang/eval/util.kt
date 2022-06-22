@@ -2,6 +2,7 @@ package org.acornlang.eval
 
 import org.acornlang.ast.AstNode
 import org.acornlang.ast.AstPtrType
+import org.acornlang.ast.AstRefType
 import org.acornlang.ast.AstType
 import org.acornlang.fail
 import java.lang.foreign.FunctionDescriptor
@@ -10,7 +11,7 @@ import java.lang.foreign.SegmentAllocator
 import java.lang.foreign.ValueLayout
 
 fun AstNode.asType(scope: Scope): Type = when (this) {
-    is AstPtrType -> TODO("Not implemented")
+    is AstRefType -> RefType(inner.asType(scope))
     is AstType -> when (name) {
         "i8" -> Type.i8
         "i16" -> Type.i16
@@ -88,7 +89,7 @@ fun Value.Companion.fromForeignValue(context: Context, native: Any, type: Type):
             64 -> IntValue(context, type, native as Long)
             else -> throw UnsupportedOperationException("Unsupported integer size: ${type.bits}")
         }
-        is BoolType -> BoolValue(context, native as Boolean)
+        is BoolType -> BoolValue(context, Type.bool, native as Boolean)
         is StrType -> TODO("String retrieval from native")
         is StructType -> TODO("Struct retrieval from native")
         is EnumType -> EnumValue(context, type, native as Int)

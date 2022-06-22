@@ -11,6 +11,8 @@ abstract class Value(
 
     abstract val type: Type
 
+    open fun assign(to: Value): Unit = throw TypeError("cannot assign to $type")
+    abstract fun withType(type: Type): Value
     abstract fun clone(): Value
 }
 
@@ -22,6 +24,11 @@ class IntValue(
 
     val bits: Int get() = type.bits.toInt()
 
+    override fun assign(to: Value) {
+        if (to !is IntValue) throw TypeError("cannot assign $to to $type")
+        value = to.value
+    }
+    override fun withType(type: Type) = IntValue(context, type as IntType, value)
     override fun clone() = IntValue(context, type, value)
 
     override fun equals(other: Any?) = this === other || (other is IntValue && value == other.value)
@@ -30,11 +37,12 @@ class IntValue(
 
 class BoolValue(
     context: Context,
+    override val type: BoolType,
     var value: Boolean,
 ) : Value(context) {
-    override val type = Type.bool
 
-    override fun clone() = BoolValue(context, value)
+    override fun withType(type: Type) = BoolValue(context, type as BoolType, value)
+    override fun clone() = BoolValue(context, type, value)
 
     override fun equals(other: Any?) = this === other || (other is BoolValue && value == other.value)
     override fun hashCode() = value.hashCode()
@@ -42,11 +50,16 @@ class BoolValue(
 
 class StrValue(
     context: Context,
-    val value: String,
+    override val type: StrType,
+    var value: String,
 ) : Value(context) {
-    override val type = Type.str
 
-    override fun clone() = StrValue(context, value)
+    override fun assign(to: Value) {
+        if (to !is StrValue) throw TypeError("cannot assign $to to $type")
+        value = to.value
+    }
+    override fun withType(type: Type) = StrValue(context, type as StrType, value)
+    override fun clone() = StrValue(context, type, value)
 
     override fun equals(other: Any?) = this === other || (other is StrValue && value == other.value)
     override fun hashCode() = value.hashCode()
@@ -58,20 +71,27 @@ class TypeValue(
 ) : Value(context) {
     override val type = Type.type
 
+    override fun withType(type: Type) = TODO("Type can only have one type?")
     override fun clone() = TypeValue(context, value)
 
     override fun equals(other: Any?) = this === other || (other is TypeValue && value == other.value)
     override fun hashCode() = value.hashCode()
 }
 
-//class PtrValue(
-//    context: Context,
-//    val value: Value,
-//) : Value(context) {
-//    override val type = PtrType(value.type)
-//
-//    override fun clone() = PtrValue(context, value)
-//}
+class RefValue(
+    context: Context,
+    override val type: RefType,
+    val value: Value,
+) : Value(context) {
+
+    override fun withType(type: Type) = TODO("ref type")
+    override fun clone() = RefValue(context, type, value)
+
+    override fun equals(other: Any?) = this === other || (other is RefValue && value == other.value)
+    override fun hashCode() = Objects.hash(javaClass, value)
+
+
+}
 
 abstract class FnValue(
     context: Context,
@@ -79,6 +99,8 @@ abstract class FnValue(
 
     operator fun invoke(vararg args: Value) = invoke(args.toList())
     abstract operator fun invoke(args: List<Value>): Value
+
+    override fun withType(type: Type) = TODO()
 
 }
 
@@ -120,11 +142,20 @@ class TupleValue(
     }.toMutableList(),
 ) : Value(context) {
 
+    override fun withType(type: Type) = TupleValue(context, type as TupleType, values)
     override fun clone() = TupleValue(context, type, values.map { it.clone() }.toMutableList())
 
     override fun equals(other: Any?) =
         this === other || (other is TupleValue && values == other.values)
     override fun hashCode() = Objects.hash(javaClass, values)
+}
+
+abstract class ContainerValue(
+    context: Context,
+) : Value(context) {
+
+    abstract fun get(member: String): Value
+
 }
 
 class StructValue(
@@ -133,9 +164,9 @@ class StructValue(
     private val fields: MutableList<Value> = type.fieldTypes.map {
         it.default(context)
     }.toMutableList(),
-) : Value(context) {
+) : ContainerValue(context) {
 
-    fun get(field: String): Value {
+    override fun get(field: String): Value {
         val index = type.fieldNames.indexOf(field)
         if (index == -1)
             throw IllegalArgumentException("No such field: $field")
@@ -149,6 +180,7 @@ class StructValue(
         fields[index] = value
     }
 
+    override fun withType(type: Type) = StructValue(context, type as StructType, fields)
     override fun clone() = StructValue(context, type, fields.map { it.clone() }.toMutableList())
 
     override fun equals(other: Any?) =
@@ -162,8 +194,28 @@ class EnumValue(
     var value: Int,
 ) : Value(context) {
 
+    override fun withType(type: Type) = EnumValue(context, type as EnumType, value)
     override fun clone() = EnumValue(context, type, value)
 
     override fun equals(other: Any?) = this === other || (other is EnumValue && value == other.value)
     override fun hashCode() = Objects.hash(javaClass, value)
+}
+
+class ModuleValue(
+    context: Context,
+    val interpreter: ModuleInterpreter,
+) : ContainerValue(context) {
+    override fun get(member: String) = interpreter.findDecl(member) ?: throw IllegalArgumentException("No such member: $member")
+
+    override val type: Type
+        get() = TODO("Not yet implemented")
+
+    override fun withType(type: Type): Value {
+        TODO("Not yet implemented")
+    }
+
+    override fun clone(): Value {
+        TODO("Not yet implemented")
+    }
+
 }

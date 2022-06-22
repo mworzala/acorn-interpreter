@@ -71,7 +71,9 @@ class Parser(
         val next = next()
         var lhs: AstNode = when {
             next.type == TokenType.NUMBER -> AstInt(next.text.toLong())
-            next.type == TokenType.IDENT -> exprRefOrConstruct(AstRef(next.text))
+            next.type == TokenType.AMP -> AstMakeRef(expr(0))
+            next.type == TokenType.AT -> exprBuiltin()
+            next.type == TokenType.IDENT -> exprRefOrConstruct(AstIdent(next.text))
             next.type == TokenType.DOT -> AstAccess(null, expect(TokenType.IDENT).text)
             next.type == TokenType.STRING -> AstString(next.text.substring(1, next.text.length - 1))
             next.type == TokenType.TRUE -> AstBool(true)
@@ -128,7 +130,16 @@ class Parser(
 
             val rhs = expr(rbp)
 
-            lhs = AstBinary(opToken, lhs, rhs)
+            lhs = if (op == TokenType.EQ)
+                AstAssign(lhs, rhs)
+            else {
+                AstBinary(opToken, lhs, rhs)
+            }
+        }
+
+        // This is a cursed solution for sure.
+        if (peek(TokenType.LBRACE)) {
+            lhs = exprRefOrConstruct(lhs)
         }
 
         return lhs
@@ -150,6 +161,7 @@ class Parser(
             TokenType.GT, TokenType.GTEQ -> Pair(5, 6)
             TokenType.AMPAMP, TokenType.BARBAR -> Pair(7, 8)
             TokenType.DOT -> Pair(9, 10)
+            TokenType.EQ -> Pair(11, 12)
             else -> fail("Unknown operator $op")
         }
     }
@@ -254,10 +266,22 @@ class Parser(
         return AstConstruct(ident, fields)
     }
 
+    private fun exprBuiltin(): AstNode {
+        val name = expect(TokenType.IDENT).text
+        if (name != "import")
+            fail("Unknown builtin $name")
+
+        expect(TokenType.LPAREN)
+        val path = expect(TokenType.STRING).text
+        expect(TokenType.RPAREN)
+
+        return AstImport(path.substring(1, path.length - 1))
+    }
+
     private fun typeExpr(): AstNode {
-        return if (peek(TokenType.STAR)) {
-            next() // Eat the star
-            AstPtrType(typeExpr())
+        return if (peek(TokenType.AMP)) {
+            next() // Eat the &
+            AstRefType(typeExpr())
         } else if (peek(TokenType.IDENT)) {
             AstType(next().text)
         } else {
@@ -272,6 +296,7 @@ class Parser(
     private fun stmtLet(): AstNode {
         expect(TokenType.LET)
 
+        val mut = match(TokenType.MUT)
         val name = expect(TokenType.IDENT).text
 
         // Type expression
@@ -283,7 +308,7 @@ class Parser(
         expect(TokenType.EQ)
         val init = expr()
 
-        return AstLet(name, type, init)
+        return AstLet(mut, name, type, init)
     }
 
 
@@ -296,8 +321,9 @@ class Parser(
         val name = expect(TokenType.IDENT).text
 
         // Type expression
-        expect(TokenType.COLON)
-        val type = typeExpr()
+        var type: AstNode? = null
+        if (match(TokenType.COLON))
+            type = typeExpr()
 
         // Init expr
         expect(TokenType.EQ)

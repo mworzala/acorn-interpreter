@@ -1,42 +1,17 @@
+const math = @import("./math.acorn");
 
 foreign fn puts(s: str) i32;
 
-struct Addition {
-    a: i32,
-    b: i32,
-}
-
-enum Color {
-    red,
-    green,
-    blue,
-}
-
-fn color_to_string(color: Color) str {
-    if color == Color.red {
-        "red"
-    } else if color == Color.green {
-        "green"
-    } else if color == Color.blue {
-        "blue"
-    } else {
-        "unknown"
-    }
-}
 
 fn main() i32 {
     puts("Hello, world");
 
-    let color_str = color_to_string(Color.green);
-    puts(color_str);
-
-    let addition = Addition {
+    let addition = math.Addition {
         a: 1,
         b: 2,
     };
-    add(addition)
+    return math.add(addition);
 }
 
-fn add(addition: Addition) i32 {
-    addition.a + addition.b
-}
+
+

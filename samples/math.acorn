@@ -1,0 +1,9 @@
+
+struct Addition {
+    a: i32,
+    b: i32,
+}
+
+fn add(addition: Addition) i32 {
+    addition.a + addition.b
+}

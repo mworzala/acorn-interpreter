@@ -13,13 +13,20 @@ class Environment(
     val workDir: Path,
 ) {
 
+    private val interpreters = mutableMapOf<Path, ModuleInterpreter>()
+
+    fun getInterpreter(path: Path): ModuleInterpreter {
+        return interpreters.getOrPut(path) {
+            val source = path.readText()
+            ModuleInterpreter(this, path.parent, path.name, source)
+                .also { it.parse() }
+        }
+    }
+
     fun loadAndExecute(path: String) {
         val file = workDir.resolve(path)
-        val source = file.readText()
+        val interpreter = getInterpreter(file)
 
-        val interpreter = ModuleInterpreter(this, file.name, source)
-
-        interpreter.parse()
         val main = interpreter.findDecl("main")
             ?: fail("main function not found")
         if (main !is FnValue)

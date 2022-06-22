@@ -22,6 +22,7 @@ class Stmt {
               INT "1"
         """.trimIndent())
     }
+
     @Test
     fun `let ptr and expr`() {
         check("""
@@ -33,6 +34,16 @@ class Stmt {
               BINARY PLUS
                 INT "1"
                 INT "1"
+        """.trimIndent())
+    }
+
+    @Test
+    fun `let mut`() {
+        check("""
+            let mut a = 1
+        """.trimIndent(), """
+            LET mut "a"
+              INT "1"
         """.trimIndent())
     }
 

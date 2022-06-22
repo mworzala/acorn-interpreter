@@ -8,10 +8,12 @@ import org.acornlang.lexer.TokenType
 import java.lang.foreign.Linker
 import java.lang.foreign.SegmentAllocator
 import java.lang.invoke.MethodHandle
+import java.nio.file.Path
 import kotlin.math.max
 
 class ModuleInterpreter(
     val env: Environment,
+    val dir: Path,
     val name: String,
     val source: String,
 ) : Context {
@@ -48,7 +50,7 @@ class ModuleInterpreter(
         val returnValue = interpreter.visit(block, scope)
 
         //todo type coercion required here
-        if (returnValue.type != spec.ret)
+        if (spec.ret != Type.void && returnValue.type != spec.ret)
             fail("Expected return type ${spec.ret}, got ${returnValue.type}")
 
         return returnValue
@@ -103,7 +105,15 @@ class ModuleInterpreter(
             }
 
         override fun visitConstDecl(node: AstConstDecl, ctx: String): Value? {
-            TODO("Not implemented")
+            if (ctx != node.name) return null
+
+            return node.init.visit(this, ctx)
+        }
+
+        override fun visitImport(node: AstImport, ctx: String): Value? {
+            val modulePath = dir.resolve(node.module).toAbsolutePath()
+            val module = env.getInterpreter(modulePath)
+            return ModuleValue(this@ModuleInterpreter, module)
         }
 
         override fun visitNamedFnDecl(node: AstNamedFnDecl, ctx: String): Value? {
@@ -150,9 +160,9 @@ class TypeError(message: String) : RuntimeException(message) {
 
 class BlockInterpreter(val context: Context) : AstVisitor<Value, Scope>({ Type.empty.default(context) }) {
     override fun visitInt(node: AstInt, scope: Scope) = IntValue(context, Type.i32, node.value)
-    override fun visitString(node: AstString, scope: Scope) = StrValue(context, node.value)
-    override fun visitBool(node: AstBool, scope: Scope) = BoolValue(context, node.value)
-    override fun visitRef(node: AstRef, scope: Scope): Value =
+    override fun visitString(node: AstString, scope: Scope) = StrValue(context, Type.str, node.value)
+    override fun visitBool(node: AstBool, scope: Scope) = BoolValue(context, Type.bool, node.value)
+    override fun visitIdent(node: AstIdent, scope: Scope): Value =
         // todo mutable refs
         scope.get(node.name, false) ?: throw RuntimeException("Undefined reference ${node.name}")
 
@@ -206,7 +216,7 @@ class BlockInterpreter(val context: Context) : AstVisitor<Value, Scope>({ Type.e
             }
         }
 
-        return BoolValue(context, result)
+        return BoolValue(context, Type.bool, result)
     }
     private fun evalLogical(node: AstBinary, scope: Scope): Value {
         val lhs = visit(node.lhs, scope)
@@ -225,7 +235,7 @@ class BlockInterpreter(val context: Context) : AstVisitor<Value, Scope>({ Type.e
             else -> fail("Unsupported logical operator ${node.op.type}")
         }
 
-        return BoolValue(context, result)
+        return BoolValue(context, Type.bool, result)
     }
     override fun visitBinary(node: AstBinary, scope: Scope): Value {
         return when (node.op.type) {
@@ -237,6 +247,11 @@ class BlockInterpreter(val context: Context) : AstVisitor<Value, Scope>({ Type.e
             TokenType.AMPAMP, TokenType.BARBAR -> evalLogical(node, scope)
             else -> fail("unsupported operator ${node.op.type}")
         }
+    }
+
+    override fun visitMakeRef(node: AstMakeRef, ctx: Scope): Value {
+        val value = visit(node.target, ctx)
+        return RefValue(context, RefType(value.type), value)
     }
 
     override fun visitIf(node: AstIf, scope: Scope): Value {
@@ -273,7 +288,7 @@ class BlockInterpreter(val context: Context) : AstVisitor<Value, Scope>({ Type.e
         if (target !is FnValue)
             throw TypeError("Expected function, found ${target.type}")
 
-        val args = node.args.map { visit(it, scope) }
+        val args = node.args.map { visit(it, scope).clone() }
         return target.invoke(args)
     }
 
@@ -291,8 +306,10 @@ class BlockInterpreter(val context: Context) : AstVisitor<Value, Scope>({ Type.e
     }
 
     override fun visitAccess(node: AstAccess, scope: Scope): Value {
-        val target = visit(node.target!!, scope)
-        if (target is StructValue)
+        var target = visit(node.target!!, scope)
+        if (target is RefValue)
+            target = target.value
+        if (target is ContainerValue)
             return target.get(node.field)
         if (target !is TypeValue)
             throw TypeError("Expected struct, enum, found ${target.type}")
@@ -303,6 +320,15 @@ class BlockInterpreter(val context: Context) : AstVisitor<Value, Scope>({ Type.e
         if (value == -1)
             throw TypeError("Unknown enum case '${node.field}' in $type")
         return EnumValue(context, type, value)
+    }
+
+    override fun visitAssign(node: AstAssign, ctx: Scope): Value {
+        val target = visit(node.target, ctx)
+        val value = visit(node.value, ctx)
+
+        //todo check for mut
+        target.assign(to=value)
+        return value
     }
 
     override fun visitBlock(node: AstBlock, scope: Scope): Value {
@@ -333,7 +359,17 @@ class BlockInterpreter(val context: Context) : AstVisitor<Value, Scope>({ Type.e
 //                init = init.coerceType(to=type.inner)
         }
 
+        if (node.mut) {
+            val mutType = init.type.asMut()
+                ?: throw TypeError("Cannot have mutable ${init.type}")
+            init = init.withType(mutType)
+        }
+
         scope.define(node.name, init, false)
         return default
+    }
+
+    override fun visitImport(node: AstImport, ctx: Scope): Value {
+        throw IllegalStateException("Import not implemented within block")
     }
 }
