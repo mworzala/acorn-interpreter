@@ -1,0 +1,68 @@
+
+foreign fn puts(s: *i8) i32;
+
+enum Color {
+    red,
+    green,
+    blue,
+}
+
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+const Point = struct (i32, i32);
+
+union AUnion {
+    int: i32,
+    float: f32,
+}
+
+fn color_to_string(color: Color) *i8 {
+    match a_union {
+        Int(i) => ...
+        Float(f) => ...
+    }
+
+    union Expr {
+        binary: i32,
+        unary: {
+
+        },
+    }
+    match a_union {
+        int => ...
+        float => ...
+    }
+
+    match color {
+        .red => "red",
+        .green => "green",
+        .blue => "blue",
+    }
+    if color == Color.red {
+        "red"
+    } else if color == Color.green {
+        "green"
+    } else if color == Color.blue {
+        "blue"
+    }
+}
+
+fn main() i32 {
+    puts("Hello, world");
+
+    let color_str = color_to_string(.red);
+    puts(color_str);
+
+    let point = Point { x: 0, y: 0 };
+    match point {
+        { x: 0, y: 0 } => puts("origin"),
+        { x, y: blah } => puts("x: " + x + " y: " + blah),
+        _ => puts("other"),
+    };
+
+    1
+}
+

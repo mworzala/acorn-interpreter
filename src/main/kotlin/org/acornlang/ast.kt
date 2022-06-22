@@ -332,8 +332,11 @@ class AstModule(
 
 
 abstract class AstVisitor<R, P>(
-    val default: R
+    val defaultFn: () -> R = { throw IllegalStateException("unset default") }
 ) {
+    protected val default get() = defaultFn()
+
+    constructor(default: R) : this({ default })
 
     open fun visit(node: AstNode, ctx: P): R = node.visit(this, ctx)
 

@@ -1,138 +1,173 @@
-package org.acornlang
+package org.acornlang.eval
 
+import org.acornlang.Environment
+import org.acornlang.Parser
 import org.acornlang.ast.*
-import org.acornlang.eval.*
+import org.acornlang.fail
 import org.acornlang.lexer.TokenType
+import java.lang.foreign.Linker
+import java.lang.foreign.SegmentAllocator
+import java.lang.invoke.MethodHandle
 import kotlin.math.max
 
-
-// One interpreter exists per module in the program
-class Interpreter(
+class ModuleInterpreter(
     val env: Environment,
     val name: String,
     val source: String,
 ) : Context {
-    val NULL = NullValue(this)
 
     private lateinit var root: AstModule
-
-    private val decls = mutableMapOf<String, Value>()
+    private val decls = mutableMapOf<String, Value?>()
 
     fun parse() {
         root = Parser(source).module()
     }
 
-    fun findDeclByName(name: String): Value? {
+    fun findDecl(name: String): Value? {
         if (decls.containsKey(name))
             return decls[name]
-
-        val visitor = object : AstVisitor<Value?, String>(null) {
-            override fun visitModule(node: AstModule, param: String) =
-                node.decls.firstNotNullOfOrNull {
-                    it.visit(this, param)
-                }
-
-            override fun visitConstDecl(node: AstConstDecl, param: String): Value? {
-                TODO("not implemented")
-            }
-
-            override fun visitNamedFnDecl(node: AstNamedFnDecl, param: String): Value? {
-                if (node.name != param)
-                    return null
-                return FunctionValue.fromAst(this@Interpreter, node)
-            }
-
-            override fun visitStructDecl(node: AstStructDecl, param: String): Value? {
-                if (node.name != param)
-                    return null
-                val structType = StructType.from(this@Interpreter, node)
-                return TypeValue(this@Interpreter, structType)
-            }
-
-            override fun visitEnumDecl(node: AstEnumDecl, param: String): Value? {
-                if (node.name != param)
-                    return null
-                val enumType = EnumType.from(this@Interpreter, node)
-                return TypeValue(this@Interpreter, enumType)
-            }
-        }
-
-        val decl = visitor.visit(root, name)
+        val decl = DeclFinder().visit(root, name)
         if (decl != null)
             decls[name] = decl
         return decl
     }
 
 
+    // SECTION : Context Impl
 
-    // Internal
+    override fun call(spec: FnType, block: AstBlock, argValues: List<Value>): Value {
+        val scope = ScopeImpl(this)
 
-    fun evaluateBlockInScope(block: AstBlock, context: Context): Value {
-        println(block.stringify())
-        val evalutor = BlockEvaluator(this)
-        return evalutor.visitBlock(block, context)
+        // Add arguments to scope
+        for ((name, value) in spec.paramNames.zip(argValues)) {
+            //todo type check me
+            scope.define(name, value, false) //todo mut
+        }
+
+        val interpreter = BlockInterpreter(this)
+        val returnValue = interpreter.visit(block, scope)
+
+        //todo type coercion required here
+        if (returnValue.type != spec.ret)
+            fail("Expected return type ${spec.ret}, got ${returnValue.type}")
+
+        return returnValue
     }
 
-    // Context impl
+    override fun callForeign(spec: FnType, handle: MethodHandle, args: List<Value>): Value {
+        val allocator = SegmentAllocator.implicitAllocator()
+        //todo type check args
+        val foreignArgs = args.map { Value.toForeignValue(allocator, it) }
 
-    override val owner: Interpreter get() = this
-    override val returnType: Type
-        get() = TODO("Not yet implemented")
+        // I cannot make the varargs here work for the life of me.
+        val result = when (foreignArgs.size) {
+            0 -> handle.invoke()
+            1 -> handle.invoke(foreignArgs[0])
+            2 -> handle.invoke(foreignArgs[0], foreignArgs[1])
+            3 -> handle.invoke(foreignArgs[0], foreignArgs[1], foreignArgs[2])
+            4 -> handle.invoke(foreignArgs[0], foreignArgs[1], foreignArgs[2], foreignArgs[3])
+            5 -> handle.invoke(foreignArgs[0], foreignArgs[1], foreignArgs[2], foreignArgs[3], foreignArgs[4])
+            6 -> handle.invoke(foreignArgs[0], foreignArgs[1], foreignArgs[2], foreignArgs[3], foreignArgs[4], foreignArgs[5])
+            else -> fail("Unsupported number of arguments for foreign function")
+        }
 
-    override fun define(name: String, value: Value) {
-        TODO("not allowed")
+        return Value.fromForeignValue(this, result, spec.ret)
     }
 
-    override fun get(name: String): Value? {
+    override val parent: Scope get() = this
+
+    override fun define(name: String, value: Value, mut: Boolean) {
+        throw IllegalStateException("Cannot define in module context")
+    }
+
+    override fun get(name: String, mut: Boolean): Value? {
+        if (mut) throw IllegalStateException("Cannot get mutable in module context")
         return when (name) {
             "i8" -> TypeValue(this, Type.i8)
             "i16" -> TypeValue(this, Type.i16)
             "i32" -> TypeValue(this, Type.i32)
             "i64" -> TypeValue(this, Type.i64)
             "bool" -> TypeValue(this, Type.bool)
-            else -> findDeclByName(name)
+            "str" -> TypeValue(this, Type.str)
+            else -> findDecl(name)
         }
     }
 
-    fun getType(ast: AstNode): Type {
-        return when (ast) {
-            is AstType -> getType(ast)
-            is AstPtrType -> getType(ast)
-            else -> fail("Expected type")
+
+    // SECTION : Decl finder
+
+    private inner class DeclFinder : AstVisitor<Value?, String>() {
+        override fun visitModule(node: AstModule, ctx: String) =
+            node.decls.firstNotNullOfOrNull {
+                it.visit(this, ctx)
+            }
+
+        override fun visitConstDecl(node: AstConstDecl, ctx: String): Value? {
+            TODO("Not implemented")
+        }
+
+        override fun visitNamedFnDecl(node: AstNamedFnDecl, ctx: String): Value? {
+            if (ctx != node.name) return null
+
+            val retTy = node.retType?.asType(this@ModuleInterpreter) ?: Type.void
+            val paramNames = node.params.map { (it as AstFnParam).name }
+            val paramTypes = node.params.map { (it as AstFnParam).type.asType(this@ModuleInterpreter) }
+            val fnType = FnType(retTy, paramNames, paramTypes)
+
+            return if (node.foreign) {
+                val linker = Linker.nativeLinker()
+                val func = linker.defaultLookup()
+                    .lookup(node.name)
+                    .orElseThrow()
+                val descriptor = Type.getNativeDescriptor(fnType)
+                val handle = linker.downcallHandle(func, descriptor)
+                ForeignFnValue(this@ModuleInterpreter, fnType, handle)
+            } else {
+                NativeFnValue(this@ModuleInterpreter, fnType, node.body as AstBlock)
+            }
+        }
+
+        override fun visitStructDecl(node: AstStructDecl, ctx: String): Value? {
+            if (ctx != node.name) return null
+            val fieldNames = node.fields.map { (it as AstStructField).name }
+            val fieldTypes = node.fields.map { (it as AstStructField).type.asType(this@ModuleInterpreter) }
+            val structType = StructType(fieldNames, fieldTypes)
+            return TypeValue(this@ModuleInterpreter, structType)
+        }
+
+        override fun visitEnumDecl(node: AstEnumDecl, ctx: String): Value? {
+            if (ctx != node.name) return null
+            val cases = node.cases.map { (it as AstEnumCase).name }
+            val enumType = EnumType(cases)
+            return TypeValue(this@ModuleInterpreter, enumType)
         }
     }
-
-    fun getType(ast: AstPtrType): Type = PtrType(getType(ast.inner))
-
-    fun getType(ast: AstType): Type {
-        val type = get(ast.name) as? TypeValue
-        return type?.inner ?: fail("Type ${ast.name} not found")
-    }
-
-
 }
 
-private class BlockEvaluator(owner: Interpreter) : AstVisitor<Value, Context>(owner.NULL) {
-    override fun visitInt(node: AstInt, ctx: Context) = IntValue(ctx.owner, node.value, Type.from(node.value.toLong()) as IntType)
-    override fun visitString(node: AstString, ctx: Context) = StringValue(ctx.owner, node.value)
-    override fun visitBool(node: AstBool, ctx: Context) = BoolValue(ctx.owner, node.value)
-    override fun visitRef(node: AstRef, ctx: Context): Value =
-        ctx.get(node.name) ?: throw RuntimeException("Undefined reference ${node.name}")
+class TypeError(message: String) : RuntimeException(message) {
+    constructor(expected: Type, actual: Type) : this("Expected type $expected, found $actual")
+}
 
-    private fun evalArithmetic(node: AstBinary, ctx: Context): Value {
-        val lhs = visit(node.lhs, ctx)
-        val lhsType = lhs.type
-        val rhs = visit(node.rhs, ctx)
-        val rhsType = rhs.type
+class BlockInterpreter(val context: Context) : AstVisitor<Value, Scope>({ Type.empty.default(context) }) {
+    override fun visitInt(node: AstInt, scope: Scope) = IntValue(context, Type.i32, node.value)
+    override fun visitString(node: AstString, scope: Scope) = StrValue(context, node.value)
+    override fun visitBool(node: AstBool, scope: Scope) = BoolValue(context, node.value)
+    override fun visitRef(node: AstRef, scope: Scope): Value =
+        // todo mutable refs
+        scope.get(node.name, false) ?: throw RuntimeException("Undefined reference ${node.name}")
+
+    private fun evalArithmetic(node: AstBinary, scope: Scope): Value {
+        val lhs = visit(node.lhs, scope)
+        val rhs = visit(node.rhs, scope)
 
         // Ensure both are integers
-        if (lhs !is IntValue || lhsType !is IntType)
-            throw TypeError("Expected integer type, found $lhsType")
-        if (rhs !is IntValue || rhsType !is IntType)
-            throw TypeError("Expected integer type, found $rhsType")
+        if (lhs !is IntValue)
+            throw TypeError("Expected integer type, found ${lhs.type}")
+        if (rhs !is IntValue)
+            throw TypeError("Expected integer type, found ${rhs.type}")
 
         // Create a common type with the smallest number of bits to fit both
-        val resultType = IntType(max(lhsType.bits, rhsType.bits))
+        val resultType = IntType(max(lhs.bits, rhs.bits))
 
         // Perform the operation
         val result = when (node.op.type) {
@@ -143,25 +178,22 @@ private class BlockEvaluator(owner: Interpreter) : AstVisitor<Value, Context>(ow
             else -> fail("Unsupported arithmetic operator ${node.op.type}")
         }
 
-        return IntValue(ctx.owner, result, resultType)
+        return IntValue(context, resultType, result)
     }
-    private fun evalComparison(node: AstBinary, ctx: Context): Value {
-        val lhs = visit(node.lhs, ctx)
-        val rhs = visit(node.rhs, ctx)
+    private fun evalComparison(node: AstBinary, scope: Scope): Value {
+        val lhs = visit(node.lhs, scope)
+        val rhs = visit(node.rhs, scope)
 
         // Perform the operation
         val result = when (node.op.type) {
             TokenType.EQEQ -> lhs == rhs
             TokenType.BANGEQ -> lhs != rhs
             else -> {
-                val lhsType = lhs.type
-                val rhsType = rhs.type
-
                 // Ensure both are integers
-                if (lhs !is IntValue || lhsType !is IntType)
-                    throw TypeError("Expected integer type, found $lhsType")
-                if (rhs !is IntValue || rhsType !is IntType)
-                    throw TypeError("Expected integer type, found $rhsType")
+                if (lhs !is IntValue)
+                    throw TypeError("Expected integer type, found ${lhs.type}")
+                if (rhs !is IntValue)
+                    throw TypeError("Expected integer type, found ${rhs.type}")
 
                 // Perform the operation
                 when (node.op.type) {
@@ -174,11 +206,11 @@ private class BlockEvaluator(owner: Interpreter) : AstVisitor<Value, Context>(ow
             }
         }
 
-        return BoolValue(ctx.owner, result)
+        return BoolValue(context, result)
     }
-    private fun evalLogical(node: AstBinary, ctx: Context): Value {
-        val lhs = visit(node.lhs, ctx)
-        val rhs = visit(node.rhs, ctx)
+    private fun evalLogical(node: AstBinary, scope: Scope): Value {
+        val lhs = visit(node.lhs, scope)
+        val rhs = visit(node.rhs, scope)
 
         // Ensure both are booleans
         if (lhs !is BoolValue)
@@ -193,118 +225,115 @@ private class BlockEvaluator(owner: Interpreter) : AstVisitor<Value, Context>(ow
             else -> fail("Unsupported logical operator ${node.op.type}")
         }
 
-        return BoolValue(ctx.owner, result)
+        return BoolValue(context, result)
     }
-    override fun visitBinary(node: AstBinary, ctx: Context): Value {
+    override fun visitBinary(node: AstBinary, scope: Scope): Value {
         return when (node.op.type) {
             TokenType.PLUS, TokenType.MINUS,
-            TokenType.STAR, TokenType.SLASH -> evalArithmetic(node, ctx)
+            TokenType.STAR, TokenType.SLASH -> evalArithmetic(node, scope)
             TokenType.EQEQ, TokenType.BANGEQ,
             TokenType.LT, TokenType.LTEQ,
-            TokenType.GT, TokenType.GTEQ -> evalComparison(node, ctx)
-            TokenType.AMPAMP, TokenType.BARBAR -> evalLogical(node, ctx)
+            TokenType.GT, TokenType.GTEQ -> evalComparison(node, scope)
+            TokenType.AMPAMP, TokenType.BARBAR -> evalLogical(node, scope)
             else -> fail("unsupported operator ${node.op.type}")
         }
     }
 
-    override fun visitIf(node: AstIf, ctx: Context): Value {
-        val cond = visit(node.condition, ctx)
+    override fun visitIf(node: AstIf, scope: Scope): Value {
+        val cond = visit(node.condition, scope)
         if (cond !is BoolValue)
             throw TypeError("Expected bool, found ${cond.type}")
 
         return if (cond.value)
-            visit(node.thenBlock, ctx)
+            visit(node.thenBlock, scope)
         else if (node.elseBlock != null)
-            visit(node.elseBlock, ctx)
+            visit(node.elseBlock, scope)
         else default
         //todo if without else should not be allowed as an expression
         //todo maybe some "is unused" flag in context?
     }
 
-    override fun visitReturn(node: AstReturn, ctx: Context): Value {
+    override fun visitReturn(node: AstReturn, scope: Scope): Value {
         if (node.expr == null)
             return default
 
-        val result = visit(node.expr, ctx)
+        val result = visit(node.expr, scope)
 
-        if (result.type == ctx.returnType)
-            return result
+//        if (result.type == ctx.returnType)
+//            return result
 
-        return result.coerceType(to=ctx.returnType)
-    }
-
-    override fun visitCall(node: AstCall, ctx: Context): Value {
-        val target = visit(node.target, ctx)
-        if (target !is FunctionValue)
-            throw TypeError("Expected function, found ${target.type}")
-
-        val args = node.args.map { visit(it, ctx) }
-        val result = target.invoke(args)
+        //todo check return type??
+        //todo returns need to set some flag saying no more instructions should be evaluated (eg it must be the final inst in a block)
+//        return result.coerceType(to=ctx.returnType)
         return result
     }
 
-    override fun visitConstruct(node: AstConstruct, ctx: Context): Value {
-        val typeValue = visit(node.target, ctx)
+    override fun visitCall(node: AstCall, scope: Scope): Value {
+        val target = visit(node.target, scope)
+        if (target !is FnValue)
+            throw TypeError("Expected function, found ${target.type}")
+
+        val args = node.args.map { visit(it, scope) }
+        return target.invoke(args)
+    }
+
+    override fun visitConstruct(node: AstConstruct, scope: Scope): Value {
+        val typeValue = visit(node.target, scope)
         if (typeValue !is TypeValue)
             throw TypeError("Expected type, found ${typeValue.type}")
-        val structType = typeValue.inner
+        val structType = typeValue.value
         if (structType !is StructType)
-            throw TypeError("Expected struct type, found ${typeValue.inner}")
-        val value = StructValue(ctx.owner, structType)
+            throw TypeError("Expected struct type, found ${typeValue.value}")
+        val value = StructValue(context, structType)
         for ((name, init) in node.fields)
-            value.set(name, visit(init, ctx))
+            value.set(name, visit(init, scope))
         return value
     }
 
-    override fun visitAccess(node: AstAccess, ctx: Context): Value {
-        val target = visit(node.target!!, ctx)
+    override fun visitAccess(node: AstAccess, scope: Scope): Value {
+        val target = visit(node.target!!, scope)
         if (target is StructValue)
             return target.get(node.field)
         if (target !is TypeValue)
             throw TypeError("Expected struct, enum, found ${target.type}")
-        val type = target.inner
+        val type = target.value
         if (type !is EnumType)
-            throw TypeError("Expected enum, found ${target.inner}")
-        val value = type.cases.indexOf(node.field)
+            throw TypeError("Expected enum, found ${target.value}")
+        val value = type.caseNames.indexOf(node.field)
         if (value == -1)
-            throw TypeError("Unknown enum case '${node.field}' in ${type.name}")
-        return EnumValue(ctx.owner, type, value)
+            throw TypeError("Unknown enum case '${node.field}' in $type")
+        return EnumValue(context, type, value)
     }
 
-    override fun visitBlock(node: AstBlock, ctx: Context): Value {
+    override fun visitBlock(node: AstBlock, scope: Scope): Value {
+        // New scope for block
+        val blockScope = ScopeImpl(scope)
+
+        // Eval block
         var result: Value = default
         for (stmt in node.stmts) {
-            result = stmt.visit(this, ctx)
+            result = stmt.visit(this, blockScope)
         }
+
+        // Return final result
+        //todo this is not really valid. Should only return the last statement if it does not have a semicolon or is a return.
         return result
     }
 
-    override fun visitLet(node: AstLet, ctx: Context): Value {
-        var init = visit(node.init, ctx)
+    override fun visitLet(node: AstLet, scope: Scope): Value {
+        var init = visit(node.init, scope)
 
         if (node.type != null) {
-            val type = visit(node.type, ctx)
+            val type = visit(node.type, scope)
             if (type !is TypeValue)
                 throw TypeError("Expected type, found ${type.type}")
             if (type != init.type)
-                init = init.coerceType(to=type.inner)
+                //todo type coercion rules
+                TODO("Implicit type coercion")
+//                init = init.coerceType(to=type.inner)
         }
 
-        ctx.define(node.name, init)
+        scope.define(node.name, init, false)
         return default
-    }
-
-    override fun visitPtrType(node: AstPtrType, ctx: Context): Value {
-        val inner = visit(node.inner, ctx)
-        if (inner !is TypeValue)
-            throw TypeError("Expected type, found ${inner.type}")
-        return TypeValue(ctx.owner, PtrType(inner.inner))
-    }
-
-    override fun visitType(node: AstType, ctx: Context): Value {
-        val type = ctx.get(node.name)
-        if (type !is TypeValue)
-            throw TypeError("Expected type, found ${type?.type}")
-        return type
     }
 }

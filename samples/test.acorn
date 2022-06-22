@@ -1,5 +1,5 @@
 
-foreign fn puts(s: *i8) i32;
+foreign fn puts(s: str) i32;
 
 struct Addition {
     a: i32,
@@ -12,7 +12,7 @@ enum Color {
     blue,
 }
 
-fn color_to_string(color: Color) *i8 {
+fn color_to_string(color: Color) str {
     if color == Color.red {
         "red"
     } else if color == Color.green {

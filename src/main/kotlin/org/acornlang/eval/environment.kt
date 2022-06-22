@@ -1,8 +1,10 @@
 package org.acornlang
 
-import org.acornlang.eval.FunctionValue
 import org.acornlang.eval.IntValue
+import org.acornlang.eval.FnValue
+import org.acornlang.eval.ModuleInterpreter
 import java.nio.file.Path
+import kotlin.io.path.name
 import kotlin.io.path.readText
 import kotlin.system.exitProcess
 
@@ -10,21 +12,17 @@ import kotlin.system.exitProcess
 class Environment(
     val workDir: Path,
 ) {
-    val interpreters = mutableMapOf<String, Interpreter>()
 
     fun loadAndExecute(path: String) {
         val file = workDir.resolve(path)
         val source = file.readText()
-        if (interpreters.containsKey(path))
-            fail("$path is already running")
 
-        val interpreter = Interpreter(this, path, source)
-        interpreters[path] = interpreter
+        val interpreter = ModuleInterpreter(this, file.name, source)
 
         interpreter.parse()
-        val main = interpreter.findDeclByName("main")
+        val main = interpreter.findDecl("main")
             ?: fail("main function not found")
-        if (main !is FunctionValue)
+        if (main !is FnValue)
             fail("main is not a function")
         val result = main()
 
