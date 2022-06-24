@@ -1,0 +1,110 @@
+{
+    parserClass="org.acornlang.intellij.language.parser.AcornParser"
+
+    extends="com.intellij.extapi.psi.ASTWrapperPsiElement"
+
+    psiClassPrefix="Acorn"
+    psiImplClassSuffix="Impl"
+    psiPackage="org.acornlang.intellij.language.psi"
+    psiImplPackage="org.acornlang.intellij.language.psi.impl"
+
+    elementTypeHolderClass="org.acornlang.intellij.language.psi.AcornTypes"
+    elementTypeClass="org.acornlang.intellij.language.psi.AcornElementType"
+    tokenTypeClass="org.acornlang.intellij.language.psi.AcornTokenType"
+
+    tokens=[
+        LPAREN="("
+        RPAREN=")"
+        LBRACE="{"
+        RBRACE="}"
+        MINUS="-"
+        PLUS="+"
+        STAR="*"
+        SLASH="/"
+        EQ="="
+        EQEQ="=="
+        BANG="!"
+        BANGEQ="!="
+        LT="<"
+        LTEQ="<="
+        GT=">"
+        GTEQ=">="
+        AMPAMP="&&"
+        BARBAR="||"
+        SEMI=";"
+        COLON=":"
+        COMMA=","
+        DOT="."
+
+        ELSE="else"
+        ENUM="enum"
+        FALSE="false"
+        FN="fn"
+        FOREIGN="foreign"
+        IF="if"
+        LET="let"
+        RETURN="return"
+        STRUCT="struct"
+        TRUE="true"
+        WHILE="while"
+
+        // Is there a way to represent the regex for these here?
+        IDENT="regexp:[a-zA-Z_][a-zA-Z0-9_]*"
+        NUMBER="regexp:[0-9]+"
+        STRING="regexp:\"[^[\"\n]]*\""
+
+        WHITE_SPACE="regexp:[\s\t\n]+"
+    ]
+}
+
+acornFile ::= top_level_decl_* <<eof>>;
+
+private top_level_decl_ ::= named_fn_decl;
+
+// Named functions
+
+named_fn_decl ::= FOREIGN? FN IDENT LPAREN param_list? RPAREN type_expr? (SEMI | block);
+
+param_list ::= param_decl (COMMA param_decl)*;
+param_decl ::= IDENT (COLON type_expr)?;
+
+// Statements
+
+stmt ::= let_stmt | expr;
+
+let_stmt ::= LET IDENT (COLON type_expr)? (EQ expr)?;
+
+// Expressions
+
+expr ::= bool_expr_;
+
+private bool_expr_ ::= comparison_expr_ (bool_op_ comparison_expr_)*;
+private bool_op_ ::= AMPAMP | BARBAR;
+
+private comparison_expr_ ::= add_sub_expr_ (comparison_op_ add_sub_expr_)*;
+private comparison_op_ ::= EQEQ | BANGEQ | LT | LTEQ | GT | GTEQ;
+
+private add_sub_expr_ ::= mul_div_expr_ (add_sub_op_ mul_div_expr_)*;
+private add_sub_op_ ::= PLUS | MINUS;
+
+private mul_div_expr_ ::= primary_expr_ (mul_div_op_ primary_expr_)*;
+private mul_div_op_ ::= STAR | SLASH;
+
+private primary_expr_ ::= call_expr | IDENT | NUMBER | STRING | TRUE | FALSE | paren_expr_ | block | return_expr | if_expr | while_expr;
+
+call_expr ::= IDENT LPAREN arg_list? RPAREN;
+arg_list ::= expr (COMMA expr)* COMMA?;
+
+private paren_expr_ ::= LPAREN expr RPAREN;
+
+block ::= LBRACE (stmt SEMI)* stmt? RBRACE;
+
+return_expr ::= RETURN expr?;
+
+if_expr ::= IF expr block (ELSE (block | if))?;
+
+while_expr ::= WHILE expr block;
+
+// Type expressions
+
+type_expr ::= STAR? IDENT;

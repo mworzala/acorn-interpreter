@@ -1,0 +1,28 @@
+<idea-plugin>
+    <id>org.acornlang.intellij</id>
+    <name>Acorn</name>
+    <vendor>Matt Worzala</vendor>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+
+        <fileType
+                name="Acorn File"
+                implementationClass="org.acornlang.intellij.language.AcornFileType"
+                fieldName="INSTANCE"
+                language="Acorn"
+                extensions="acorn"/>
+
+        <lang.parserDefinition
+                language="Acorn"
+                implementationClass="org.acornlang.intellij.language.AcornParserDefinition"/>
+
+        <lang.syntaxHighlighterFactory
+                language="Acorn"
+                implementationClass="org.acornlang.intellij.language.AcornSyntaxHighlighterFactory"/>
+
+<!--        <navbar implementation="org.acornlang.intellij.language.AcornStructureAwareNavbar" />-->
+
+    </extensions>
+</idea-plugin>

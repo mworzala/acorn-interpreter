@@ -1,16 +1,46 @@
 const math = @import("./math.acorn");
 
-foreign fn puts(s: str) i32;
+fn slice_test() {
+    let arr: []i32 = @slice(1, 2, 3);
+    @assert(arr[0] == 1);
+    @assert(arr[1] == 2);
+    @assert(arr[2] == 3);
 
+    let arr2 = @slice_append(arr, 4);
+    @assert(arr2[3] == 4);
 
-fn main() i32 {
-    puts("Hello, world");
+    let arr3 = @slice_range(arr2, 1, 2);
+    @assert(@slice_len(arr3) == 1);
+    @assert(arr3[0] == 2);
+}
 
+fn math_test() {
     let addition = math.Addition {
         a: 1,
         b: 2,
     };
-    return math.add(addition);
+    let result = math.add(addition);
+    @assert(result == 3);
+}
+
+struct Greeter {
+    message: str,
+
+    fn greet(self) {
+        @dbg(self.message);
+    }
+}
+
+fn main() i32 {
+    slice_test();
+    math_test();
+
+    let greeter = Greeter {
+        message: "Hello, world!",
+    };
+    greeter.greet();
+
+    0
 }
 
 

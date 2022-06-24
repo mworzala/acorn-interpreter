@@ -1,0 +1,47 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+plugins {
+    id "org.jetbrains.kotlin.jvm" version "1.7.0" apply false
+}
+
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'org.jetbrains.kotlin.jvm'
+
+    group = 'org.acornlang'
+    version = '0.1.0'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
+        testImplementation("org.junit.jupiter:junit-jupiter-engine:5.8.2")
+        testImplementation("org.junit.jupiter:junit-jupiter-params:5.8.2")
+    }
+
+    tasks.withType(KotlinCompile) {
+        kotlinOptions.jvmTarget = "1.8"
+    }
+
+    test {
+        useJUnitPlatform()
+//        jvmArgs("--enable-preview")
+    }
+
+//    java {
+//        toolchain {
+//            languageVersion.set(JavaLanguageVersion.of(19))
+//        }
+//    }
+//
+//    tasks.withType(JavaCompile) {
+//        options.compilerArgs.add("--enable-preview")
+//    }
+
+}
+
+
+
+
