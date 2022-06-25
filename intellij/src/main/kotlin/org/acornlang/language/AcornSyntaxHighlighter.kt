@@ -1,11 +1,12 @@
-package org.acornlang.intellij.language
+package org.acornlang.language
 
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.editor.colors.TextAttributesKey.createTextAttributesKey
 import com.intellij.openapi.fileTypes.SyntaxHighlighterBase
 import com.intellij.psi.tree.IElementType
-import org.acornlang.intellij.language.psi.AcornTypes
+import org.acornlang.language.lexer.AcornLexerAdapter
+import org.acornlang.language.psi.AcornTypes
 
 class AcornSyntaxHighlighter : SyntaxHighlighterBase() {
 
@@ -24,21 +25,23 @@ class AcornSyntaxHighlighter : SyntaxHighlighterBase() {
         val SEMICOLON_KEYS = arrayOf(DefaultLanguageHighlighterColors.SEMICOLON)
         val COMMA_KEYS = arrayOf(DefaultLanguageHighlighterColors.COMMA)
         val PAREN_KEYS = arrayOf(DefaultLanguageHighlighterColors.PARENTHESES)
+//        val DOC_COMMENT_KEYS = arrayOf(DefaultLanguageHighlighterColors.DOC_COMMENT)
 
         val EMPTY_KEYS = arrayOf<TextAttributesKey>()
 
         val KEYWORDS = listOf(
-            AcornTypes.ELSE, AcornTypes.ENUM, AcornTypes.FALSE,
-            AcornTypes.FN, AcornTypes.FOREIGN, AcornTypes.IF,
-            AcornTypes.LET, AcornTypes.RETURN, AcornTypes.STRUCT,
-            AcornTypes.TRUE, AcornTypes.WHILE,
+            AcornTypes.CONST, AcornTypes.ELSE, AcornTypes.ENUM,
+            AcornTypes.FALSE, AcornTypes.FN, AcornTypes.FOREIGN,
+            AcornTypes.IF, AcornTypes.LET, AcornTypes.MUT,
+            AcornTypes.RETURN, AcornTypes.SPEC, AcornTypes.STRUCT,
+            AcornTypes.TRUE, AcornTypes.TYPE, AcornTypes.WHILE,
         )
         val OPS = listOf(
             AcornTypes.MINUS, AcornTypes.PLUS, AcornTypes.STAR,
             AcornTypes.SLASH, AcornTypes.EQEQ, AcornTypes.BANG,
             AcornTypes.BANGEQ, AcornTypes.LT, AcornTypes.LTEQ,
             AcornTypes.GT, AcornTypes.GTEQ, AcornTypes.AMPAMP,
-            AcornTypes.BARBAR,
+            AcornTypes.BARBAR, AcornTypes.EQ,
         )
     }
 
@@ -55,7 +58,10 @@ class AcornSyntaxHighlighter : SyntaxHighlighterBase() {
         AcornTypes.SEMI -> SEMICOLON_KEYS
         AcornTypes.COMMA -> COMMA_KEYS
         AcornTypes.LPAREN, AcornTypes.RPAREN -> PAREN_KEYS
+//        AcornTypes.DOC_COMMENT -> DOC_COMMENT_KEYS
         else -> EMPTY_KEYS
     }
+
+
 
 }

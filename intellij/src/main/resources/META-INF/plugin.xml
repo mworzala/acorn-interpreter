@@ -9,20 +9,38 @@
 
         <fileType
                 name="Acorn File"
-                implementationClass="org.acornlang.intellij.language.AcornFileType"
+                implementationClass="org.acornlang.language.AcornFileType"
                 fieldName="INSTANCE"
                 language="Acorn"
                 extensions="acorn"/>
 
         <lang.parserDefinition
                 language="Acorn"
-                implementationClass="org.acornlang.intellij.language.AcornParserDefinition"/>
+                implementationClass="org.acornlang.language.AcornParserDefinition"/>
 
         <lang.syntaxHighlighterFactory
                 language="Acorn"
-                implementationClass="org.acornlang.intellij.language.AcornSyntaxHighlighterFactory"/>
+                implementationClass="org.acornlang.language.AcornSyntaxHighlighterFactory"/>
 
-<!--        <navbar implementation="org.acornlang.intellij.language.AcornStructureAwareNavbar" />-->
+        <completion.contributor
+                language="Acorn"
+                implementationClass="org.acornlang.language.completion.AcornBasicCompletionContributor"/>
+
+        <psi.referenceContributor
+                language="Acorn"
+                implementation="org.acornlang.language.reference.AcornReferenceContributor"/>
+
+        <lang.foldingBuilder
+                language="Acorn"
+                implementationClass="org.acornlang.language.folding.AcornFoldingBuilder"/>
+
+<!--        <lang.commenter-->
+<!--                language="Acorn"-->
+<!--                implementationClass="org.acornlang.language.commenter.AcornCommenter"/>-->
+
+        <lang.documentationProvider
+                language="Acorn"
+                implementationClass="org.acornlang.language.documentation.AcornDocumentationProvider"/>
 
     </extensions>
 </idea-plugin>

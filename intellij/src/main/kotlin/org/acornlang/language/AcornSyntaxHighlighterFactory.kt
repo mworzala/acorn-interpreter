@@ -1,4 +1,4 @@
-package org.acornlang.intellij.language
+package org.acornlang.language
 
 import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory
 import com.intellij.openapi.project.Project

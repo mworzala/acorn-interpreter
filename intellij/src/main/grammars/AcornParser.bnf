@@ -1,0 +1,182 @@
+{
+    parserClass="org.acornlang.language.parser.AcornParser"
+
+    extends="com.intellij.extapi.psi.ASTWrapperPsiElement"
+
+    psiClassPrefix="Acorn"
+    psiImplClassSuffix="Impl"
+    psiPackage="org.acornlang.language.psi"
+    psiImplPackage="org.acornlang.language.psi.impl"
+
+    elementTypeHolderClass="org.acornlang.language.psi.AcornTypes"
+    elementTypeClass="org.acornlang.language.psi.AcornElementType"
+    tokenTypeClass="org.acornlang.language.psi.AcornTokenType"
+
+    psiImplUtilClass="org.acornlang.language.psi.AcornPsiImplUtil"
+
+    tokens=[
+        LPAREN="("
+        RPAREN=")"
+        LBRACE="{"
+        RBRACE="}"
+        MINUS="-"
+        PLUS="+"
+        STAR="*"
+        SLASH="/"
+        EQ="="
+        EQEQ="=="
+        BANG="!"
+        BANGEQ="!="
+        LT="<"
+        LTEQ="<="
+        GT=">"
+        GTEQ=">="
+        AMPAMP="&&"
+        BARBAR="||"
+        SEMI=";"
+        COLON=":"
+        COMMA=","
+        DOT="."
+
+        ELSE="else"
+        ENUM="enum"
+        FALSE="false"
+        FN="fn"
+        FOREIGN="foreign"
+        IF="if"
+        LET="let"
+        RETURN="return"
+        STRUCT="struct"
+        TRUE="true"
+        WHILE="while"
+
+        // Is there a way to represent the regex for these here?
+        IDENT="regexp:[a-zA-Z_][a-zA-Z0-9_]*"
+        NUMBER="regexp:[0-9]+"
+        STRING="regexp:\"[^[\"\n]]*\""
+
+        WHITE_SPACE="regexp:[\s\t\n]+"
+    ]
+}
+
+acornFile ::= top_level_decl_* <<eof>>;
+
+// SECTION: Top level declarations
+
+private top_level_decl_ ::= const_decl | named_fn_decl | named_struct_decl | named_enum_decl | named_spec_decl;
+
+// Const decl
+
+const_decl ::= CONST IDENT (COLON type_expr)? EQ expr SEMI;
+
+// Functions
+
+named_fn_decl ::= FOREIGN? FN IDENT fn_proto_ (SEMI | block) {
+  mixin="org.acornlang.language.psi.impl.AcornNamedElementImpl"
+  implements="org.acornlang.language.psi.AcornNamedElement"
+  methods=[getName setName getNameIdentifier getTextOffset]
+}
+//anon_fn_decl ::= FN fn_proto_ block;
+
+private fn_proto_ ::= LPAREN param_list? RPAREN type_expr?;
+param_list ::= param_decl (COMMA param_decl)* COMMA?;
+param_decl ::= IDENT (COLON type_expr)?;
+
+// Structs
+
+named_struct_decl ::= STRUCT IDENT struct_body_;
+//anon_struct_decl ::= STRUCT struct_body_
+
+private struct_body_ ::= LBRACE struct_field* top_level_decl_* RBRACE
+
+struct_field ::= IDENT COLON type_expr COMMA;
+
+// Enums
+
+named_enum_decl ::= ENUM IDENT enum_body_;
+//anon_enum_decl ::= ENUM enum_body_;
+
+private enum_body_ ::= LBRACE enum_case* top_level_decl_* RBRACE;
+
+enum_case ::= IDENT COMMA
+
+// Spec
+
+named_spec_decl ::= SPEC IDENT spec_body_;
+//anon_spec_decl ::= SPEC spec_body_;
+
+private spec_body_ ::= LBRACE spec_fn_decl* RBRACE;
+
+spec_fn_decl ::= FN IDENT fn_proto_ SEMI;
+
+// SECTION: Statements
+
+stmt ::= let_stmt | expr;
+
+let_stmt ::= LET IDENT (COLON type_expr)? (EQ expr)?;
+
+// SECTION: Expressions
+
+expr ::= bool_expr_;
+
+private bool_expr_ ::= comparison_expr_ (bool_op_ comparison_expr_)*;
+private bool_op_ ::= AMPAMP | BARBAR;
+
+private comparison_expr_ ::= add_sub_expr_ (comparison_op_ add_sub_expr_)*;
+private comparison_op_ ::= EQEQ | BANGEQ | LT | LTEQ | GT | GTEQ;
+
+private add_sub_expr_ ::= mul_div_expr_ (add_sub_op_ mul_div_expr_)*;
+private add_sub_op_ ::= PLUS | MINUS;
+
+private mul_div_expr_ ::= access_expr_ (mul_div_op_ access_expr_)*;
+private mul_div_op_ ::= STAR | SLASH;
+
+private access_expr_ ::= eq_expr_ (DOT IDENT)*;
+
+private eq_expr_ ::= primary_expr_ (EQ primary_expr_)?;
+
+private primary_expr_ ::= call_expr | intrinsic_call_expr | paren_expr_ | block | return_expr | if_expr | while_expr | type_expr | expr_literal;
+
+expr_literal ::= IDENT | NUMBER | STRING | TRUE | FALSE;
+
+call_expr ::= IDENT LPAREN arg_list? RPAREN;
+intrinsic_call_expr ::= AT IDENT LPAREN arg_list? RPAREN;
+arg_list ::= expr (COMMA expr)* COMMA?;
+
+private paren_expr_ ::= LPAREN expr RPAREN;
+
+block ::= LBRACE (stmt SEMI)* stmt? RBRACE;
+
+return_expr ::= RETURN expr?;
+
+if_expr ::= IF expr block (ELSE (block | if))?;
+
+while_expr ::= WHILE expr block;
+
+// Type expressions
+
+type_expr ::= union_type_expr_;
+
+private union_type_expr_ ::= primary_type_expr_ (AMP primary_type_expr_)*
+
+private primary_type_expr_ ::= type_tuple | type_fn | type_struct | type_enum | type_spec
+                             | type_call | type_array | type_ref | type_literal;
+
+type_tuple ::= LPAREN type_expr (COMMA | (COMMA type_expr)* COMMA?) RPAREN;
+type_fn ::= FN fn_proto_;
+type_struct ::= STRUCT struct_body_;
+type_enum ::= ENUM enum_body_;
+type_spec ::= SPEC spec_body_;
+
+type_call ::= IDENT LPAREN type_arg_list? RPAREN;
+type_arg_list ::= type_expr (COMMA type_expr)* COMMA?;
+
+type_array ::= LBRACKET type_expr RBRACKET;
+type_ref ::= AMP MUT? type_expr;
+type_literal ::= TYPE | IDENT;
+
+
+// Comments
+
+doc_comment_group ::= DOC_COMMENT*;
+

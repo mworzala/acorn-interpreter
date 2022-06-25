@@ -1,4 +1,4 @@
-package org.acornlang.intellij.language
+package org.acornlang.language.lexer
 
 import com.intellij.lexer.FlexAdapter
 

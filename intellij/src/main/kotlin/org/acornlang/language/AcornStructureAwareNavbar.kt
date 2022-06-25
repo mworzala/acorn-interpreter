@@ -1,9 +1,9 @@
-package org.acornlang.intellij.language
+package org.acornlang.language
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.navigationToolbar.StructureAwareNavBarModelExtension
 import com.intellij.lang.Language
-import org.acornlang.intellij.language.psi.AcornNamedFnDecl
+import org.acornlang.language.psi.AcornNamedFnDecl
 import javax.swing.Icon
 
 class AcornStructureAwareNavbar : StructureAwareNavBarModelExtension() {

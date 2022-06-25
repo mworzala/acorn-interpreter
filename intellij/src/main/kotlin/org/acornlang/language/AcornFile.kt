@@ -1,4 +1,4 @@
-package org.acornlang.intellij.language
+package org.acornlang.language
 
 import com.intellij.extapi.psi.PsiFileBase
 import com.intellij.psi.FileViewProvider
