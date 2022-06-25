@@ -42,7 +42,7 @@ class AcornDocumentationProvider : AbstractDocumentationProvider() {
 
         builder.append(DocumentationMarkup.SECTIONS_END)
 
-        return doc
+        return builder.toString()
     }
 
 }

@@ -24,7 +24,7 @@ IDENT_CHAR=[a-zA-Z0-9_]
 STRING_LITERAL=\"[^[\"\n]]*\"
 
 DOC_COMMENT="///"[^\n]*\n
-//LINE_COMMENT=("//")[^\r\n]*
+LINE_COMMENT="//"[^\n]*\n
 
 %%
 
@@ -73,6 +73,7 @@ DOC_COMMENT="///"[^\n]*\n
     "struct"  { return AcornTypes.STRUCT; }
     "true"    { return AcornTypes.TRUE; }
     "type"    { return AcornTypes.TYPE; }
+    "union"   { return AcornTypes.UNION; }
     "while"   { return AcornTypes.WHILE; }
 
     // Literals
@@ -83,6 +84,7 @@ DOC_COMMENT="///"[^\n]*\n
     // Special
     {WHITE_SPACE}+                    { return TokenType.WHITE_SPACE; }
     {DOC_COMMENT}                     { return AcornTypes.DOC_COMMENT; }
+    {LINE_COMMENT}                    { return AcornTypes.LINE_COMMENT; }
 }
 
 [^]                                   { return TokenType.BAD_CHARACTER; }
