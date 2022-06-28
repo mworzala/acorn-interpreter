@@ -366,6 +366,32 @@ class AstEnumCase(
     }
 }
 
+class AstUnionDecl(
+    val name: String,
+    val cases: List<AstUnionCase>,
+) : AstNode() {
+
+    override fun <R, P> visit(visitor: AstVisitor<R, P>, param: P) = visitor.visitUnionDecl(this, param)
+
+    override fun stringify(indent: String): String {
+        return "${indent}UNION \"${name}\"\n" +
+                cases.joinToString("") { it.stringify("$indent  ") }
+    }
+}
+
+class AstUnionCase(
+    val name: String,
+    val type: AstNode?,
+) : AstNode() {
+
+    override fun <R, P> visit(visitor: AstVisitor<R, P>, param: P) = visitor.visitUnionCase(this, param)
+
+    override fun stringify(indent: String): String {
+        return "${indent}CASE \"${name}\"\n" +
+                (type?.stringify("$indent  ") ?: "")
+    }
+}
+
 
 class AstModule(
     val decls: List<AstNode>,
@@ -542,6 +568,17 @@ abstract class AstVisitor<R, P>(
         return default
     }
     open fun visitEnumCase(node: AstEnumCase, ctx: P): R = default
+
+    open fun visitUnionDecl(node: AstUnionDecl, ctx: P): R {
+        for (case in node.cases)
+            visit(case, ctx)
+        return default
+    }
+    open fun visitUnionCase(node: AstUnionCase, ctx: P): R {
+        if (node.type != null)
+            visit(node.type, ctx)
+        return default
+    }
 
     // Module
 

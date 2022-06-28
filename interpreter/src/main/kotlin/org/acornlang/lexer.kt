@@ -15,6 +15,7 @@ enum class TokenType {
     CONST, ELSE, ENUM, FN,
     FOREIGN, IF, LET, MUT, RETURN,
     STRUCT, WHILE, TRUE, FALSE,
+    UNION, TYPE,
 
     NUMBER, STRING, IDENT,
 
@@ -188,31 +189,39 @@ class Lexer(
         }
 
         when (this.source[this.start]) {
-            'c' -> return checkKeyword(1, 4, "onst", TokenType.CONST);
+            'c' -> return checkKeyword(1, 4, "onst", TokenType.CONST)
             'e' -> {
                 if (this.cursor - this.start > 1) {
                     when(this.source[this.start + 1]) {
-                        'l' -> return checkKeyword(2, 2, "se", TokenType.ELSE);
-                        'n' -> return checkKeyword(2, 2, "um", TokenType.ENUM);
+                        'l' -> return checkKeyword(2, 2, "se", TokenType.ELSE)
+                        'n' -> return checkKeyword(2, 2, "um", TokenType.ENUM)
                     }
                 }
             }
             'f' -> {
                 if (this.cursor - this.start > 1) {
                     when (this.source[this.start + 1]) {
-                        'a' -> return checkKeyword(2, 3, "lse", TokenType.FALSE);
-                        'n' -> return checkKeyword(2, 0, "", TokenType.FN);
-                        'o' -> return checkKeyword(2, 5, "reign", TokenType.FOREIGN);
+                        'a' -> return checkKeyword(2, 3, "lse", TokenType.FALSE)
+                        'n' -> return checkKeyword(2, 0, "", TokenType.FN)
+                        'o' -> return checkKeyword(2, 5, "reign", TokenType.FOREIGN)
                     }
                 }
             }
-            'i' -> return checkKeyword(1, 1, "f", TokenType.IF);
-            'l' -> return checkKeyword(1, 2, "et", TokenType.LET);
-            'm' -> return checkKeyword(1, 2, "ut", TokenType.MUT);
-            'r' -> return checkKeyword(1, 5, "eturn", TokenType.RETURN);
-            's' -> return checkKeyword(1, 5, "truct", TokenType.STRUCT);
-            't' -> return checkKeyword(1, 3, "rue", TokenType.TRUE);
-            'w' -> return checkKeyword(1, 4, "hile", TokenType.WHILE);
+            'i' -> return checkKeyword(1, 1, "f", TokenType.IF)
+            'l' -> return checkKeyword(1, 2, "et", TokenType.LET)
+            'm' -> return checkKeyword(1, 2, "ut", TokenType.MUT)
+            'r' -> return checkKeyword(1, 5, "eturn", TokenType.RETURN)
+            's' -> return checkKeyword(1, 5, "truct", TokenType.STRUCT)
+            't' -> {
+                if (this.cursor - this.start > 1) {
+                    when (this.source[this.start + 1]) {
+                        'r' -> return checkKeyword(2, 2, "ue", TokenType.TRUE)
+                        'y' -> return checkKeyword(2, 2, "pe", TokenType.TYPE)
+                    }
+                }
+            }
+            'u' -> return checkKeyword(1, 4, "nion", TokenType.UNION)
+            'w' -> return checkKeyword(1, 4, "hile", TokenType.WHILE)
         }
 
         return TokenType.IDENT

@@ -36,6 +36,100 @@ class Parser(
         return expr(0)
     }
 
+//    fun typeExpr2(): AstNode {
+//        // A container type or something that can produce a container type
+//        fun typeSingle(): AstNode {
+//            if (peek(TokenType.STRUCT))
+//                return typeStructDecl()
+//            if (peek(TokenType.ENUM))
+//                return typeEnumDecl()
+//            if (peek(TokenType.UNION))
+//                return typeUnionDecl()
+////            if (peek(TokenType.SPEC))
+////                return typeSpec()
+//
+//            var lhs = typeLiteral()
+//            while (true) {
+//                if (match(TokenType.DOT)) {
+//                    // Access
+//                    val rhs = typeLiteral()
+//                    lhs = AstAccess(lhs, rhs)
+//                    continue
+//                }
+//                if (peek(TokenType.LPAREN)) {
+//                    // Call
+//                    continue
+//                }
+//                break
+//            }
+//
+//            return lhs
+//        }
+//
+//        var lhs = typeSingle()
+//        // There is a note here, which is that ref type cannot be part of a type union
+//        while (match(TokenType.AMP)) {
+//            val rhs = typeSingle()
+//            lhs = AstTypeUnion(lhs, rhs)
+//        }
+//        return lhs
+//    }
+//
+//    private fun typeUnion(): AstNode {
+//        TODO()
+//    }
+//
+//    private fun typeTuple(): AstNode {
+//        TODO()
+//    }
+//
+//    private fun typeFn(): AstNode {
+//        TODO()
+//    }
+//
+//    private fun typeStructDecl(): AstNode {
+//        TODO()
+//    }
+//
+//    private fun typeEnumDecl(): AstNode {
+//        TODO()
+//    }
+//
+//    private fun typeUnionDecl(): AstNode {
+//        TODO()
+//    }
+//
+//    private fun typeSpecDecl(): AstNode {
+//        TODO()
+//    }
+//
+//    private fun typeCall(): AstNode {
+//        TODO()
+//    }
+//
+//    private fun typeAccess(): AstNode {
+//
+//    }
+//
+//    private fun typeArray(): AstNode {
+//        TODO()
+//    }
+//
+//    private fun typeRef(): AstNode {
+//        TODO()
+//    }
+//
+//    private fun typeLiteral(): AstNode {
+//        TODO()
+//    }
+
+
+
+
+
+
+
+
     fun stmt(): AstNode {
         if (peek(TokenType.LET))
             return stmtLet()
@@ -51,6 +145,8 @@ class Parser(
             return declStruct()
         if (peek(TokenType.ENUM))
             return declEnum()
+        if (peek(TokenType.UNION))
+            return declUnion()
         fail("Expected const, foreign, fn, struct, enum. found ${peek().type}")
     }
 
@@ -128,7 +224,7 @@ class Parser(
                 continue
             }
 
-            val rhs = expr(rbp)
+            val rhs = expr(rbp, allowConstruct = allowConstruct)
 
             lhs = if (op == TokenType.EQ)
                 AstAssign(lhs, rhs)
@@ -450,6 +546,33 @@ class Parser(
         expect(TokenType.RBRACE)
 
         return AstEnumDecl(name, cases)
+    }
+
+    private fun declUnion(): AstNode {
+        // Parse a single union case
+        fun unionCase(): AstUnionCase {
+            val name = expect(TokenType.IDENT).text
+
+            var type: AstNode? = null
+            if (match(TokenType.COLON))
+                type = typeExpr()
+
+            return AstUnionCase(name, type)
+        }
+
+        expect(TokenType.UNION)
+        val name = expect(TokenType.IDENT).text
+
+        // Fields
+        expect(TokenType.LBRACE)
+        val cases = mutableListOf<AstUnionCase>()
+        while (!peek(TokenType.RBRACE)) {
+            cases.add(unionCase())
+            expect(TokenType.COMMA)
+        }
+        expect(TokenType.RBRACE)
+
+        return AstUnionDecl(name, cases)
     }
 
     // Helper functions

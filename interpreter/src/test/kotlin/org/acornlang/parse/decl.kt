@@ -130,4 +130,59 @@ class DeclTest {
         """.trimIndent())
     }
 
+    @Test
+    fun `empty union`() {
+        check("""
+            union Foo {
+            }
+        """.trimIndent(), """
+            UNION "Foo"
+        """.trimIndent())
+    }
+
+    @Test
+    fun `union with untyped case`() {
+        check("""
+            union Foo {
+                None,
+            }
+        """.trimIndent(), """
+            UNION "Foo"
+              CASE "None"
+        """.trimIndent())
+    }
+
+    @Test
+    fun `union with typed case`() {
+        check("""
+            union Foo {
+                Int: i32,
+            }
+        """.trimIndent(), """
+            UNION "Foo"
+              CASE "Int"
+                TYPE "i32"
+        """.trimIndent())
+    }
+
+//    @Test
+//    fun `union with multiple types and cases`() {
+//        check("""
+//            union Foo {
+//                Int: i32,
+//                Tuple: (i32, i32),
+//                Struct: struct {
+//                    a: i32,
+//                    b: i32,
+//                },
+//                None,
+//            }
+//        """.trimIndent(), """
+//            UNION "Foo"
+//              CASE "Int"
+//              CASE "Tuple"
+//              CASE "STRUCT"
+//        """.trimIndent())
+//    }
+
 }

@@ -383,7 +383,8 @@ class ExprTest {
         check("""
             @import("./test.acorn")
         """.trimIndent(), """
-            IMPORT "./test.acorn"
+            INTRINSIC "import"
+              STR "./test.acorn"
         """.trimIndent())
     }
 }
