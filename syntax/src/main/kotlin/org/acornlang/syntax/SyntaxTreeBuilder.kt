@@ -35,7 +35,7 @@ class SyntaxTreeBuilder {
 
     // Helpers
 
-    fun spanOf(text: String): Span {
+    private fun spanOf(text: String): Span {
         val span = Span(cursor, cursor + text.length)
         cursor += text.length
         return span
