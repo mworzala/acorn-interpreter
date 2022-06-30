@@ -1,9 +1,9 @@
 package org.acornlang
 
-import org.acornlang.ast.*
-import org.acornlang.lexer.Lexer
-import org.acornlang.lexer.Token
-import org.acornlang.lexer.TokenType
+import org.acornlang.syntax.*
+import org.acornlang.lex.Lexer
+import org.acornlang.lex.Token
+import org.acornlang.lex.TokenType
 
 class Parser(
     private val source: String,

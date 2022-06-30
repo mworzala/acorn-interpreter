@@ -1,10 +1,10 @@
 package org.acornlang
 
-import org.acornlang.ast.AstBinary
-import org.acornlang.ast.AstInt
-import org.acornlang.lexer.Span
-import org.acornlang.lexer.Token
-import org.acornlang.lexer.TokenType
+import org.acornlang.syntax.AstBinary
+import org.acornlang.syntax.AstInt
+import org.acornlang.lex.Span
+import org.acornlang.lex.Token
+import org.acornlang.lex.TokenType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

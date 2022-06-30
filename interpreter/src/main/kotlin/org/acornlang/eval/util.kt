@@ -1,6 +1,6 @@
 package org.acornlang.eval
 
-import org.acornlang.ast.*
+import org.acornlang.syntax.*
 import org.acornlang.fail
 //import java.lang.foreign.FunctionDescriptor
 //import java.lang.foreign.MemoryLayout

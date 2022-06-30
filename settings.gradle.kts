@@ -1,7 +1,7 @@
 rootProject.name = "acorn"
 include("common")
 include("lexer")
-include("ast")
+include("syntax")
 include("parser")
 include("interpreter")
 

@@ -1,6 +1,6 @@
-package org.acornlang.ast
+package org.acornlang.syntax
 
-import org.acornlang.lexer.Token
+import org.acornlang.lex.Token
 
 abstract class AstNode {
     abstract fun <R, P> visit(visitor: AstVisitor<R, P>, param: P): R

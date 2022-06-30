@@ -8,7 +8,7 @@
 dependencies {
     implementation(project(":common"))
     implementation(project(":lexer"))
-    implementation(project(":ast"))
+    implementation(project(":syntax"))
 }
 
 //tasks {

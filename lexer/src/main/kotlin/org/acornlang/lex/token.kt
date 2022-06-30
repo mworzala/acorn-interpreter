@@ -1,4 +1,4 @@
-package org.acornlang.lexer
+package org.acornlang.lex
 
 enum class TokenType {
     LPAREN, RPAREN,
@@ -7,18 +7,15 @@ enum class TokenType {
     MINUS, PLUS, STAR, SLASH,
     EQ, EQEQ, BANG, BANGEQ,
     LT, LTEQ, GT, GTEQ,
-    AMP, AMPAMP, BARBAR,
+    AMP, AMPAMP, PIPEPIPE,
     SEMICOLON, COLON, COMMA, DOT, AT,
 
-    CONST, ELSE, ENUM, FN,
-    FOREIGN, IF, LET, MUT, RETURN,
-    STRUCT, WHILE, TRUE, FALSE,
-    UNION, TYPE,
+    BREAK, CONST, ELSE, ENUM, FALSE,
+    FN, FOREIGN, IF, LET, MUT, RETURN,
+    SPEC, STRUCT, TRUE, TYPE, UNION,
+    WHILE,
 
     NUMBER, STRING, IDENT,
-
-    // Syntax nodes to be moved
-    ROOT,
 
     DOC_COMMENT, COMMENT,
     WHITESPACE, ERROR;

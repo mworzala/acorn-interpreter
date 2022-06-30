@@ -1,6 +1,6 @@
 package org.acornlang.eval
 
-import org.acornlang.ast.AstBlock
+import org.acornlang.syntax.AstBlock
 import java.lang.invoke.MethodHandle
 import java.util.*
 

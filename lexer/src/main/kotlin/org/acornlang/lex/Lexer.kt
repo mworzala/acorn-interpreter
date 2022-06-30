@@ -1,12 +1,19 @@
-package org.acornlang.lexer
+package org.acornlang.lex
 
-typealias Token = Pair<TokenType, String>
+import org.acornlang.common.text.Span
+
+data class Token(val type: TokenType, val value: String, val span: Span)
 
 class Lexer(
-    private val source: String,
+    val source: String,
 ) {
     private var start: Int = 0
     private var cursor: Int = 0
+
+    fun reset() {
+        start = 0
+        cursor = 0
+    }
 
     fun next(): Token? {
         this.start = this.cursor
@@ -28,6 +35,12 @@ class Lexer(
         return symbol(c)
     }
 
+    fun peek(): Token? {
+        val result = next()
+        this.cursor = this.start
+        return result
+    }
+
     // Lex functions
 
     private fun whitespaceOrNull(): Token? {
@@ -43,7 +56,8 @@ class Lexer(
                         do {
                             this.advance()
                         } while (!this.atEnd() && this.peek0() != '\n')
-                        return Token(TokenType.COMMENT, text())
+                        //todo differentiate doc comments
+                        return token(TokenType.COMMENT)
                     }
                     break
                 }
@@ -52,14 +66,14 @@ class Lexer(
         }
 
         if (this.start == this.cursor) return null
-        return Token(TokenType.WHITESPACE, text())
+        return token(TokenType.WHITESPACE)
     }
 
     private fun ident(): Token {
         while (isAlpha(peek0()) || isDigit(peek0()))
             advance()
 
-        return Token(identOrKeyword(), text())
+        return token(identOrKeyword())
     }
 
     private fun number(): Token {
@@ -68,7 +82,7 @@ class Lexer(
 
         //todo floating point
 
-        return Token(TokenType.NUMBER, text())
+        return token(TokenType.NUMBER)
     }
 
     private fun string(): Token {
@@ -80,38 +94,38 @@ class Lexer(
 
         // todo this allows for multiline strings, that should not be allowed.
         if (atEnd())
-            return Token(TokenType.ERROR, text())
+            return token(TokenType.ERROR)
 
         // Eat closing quote
         advance()
-        return Token(TokenType.STRING, text())
+        return token(TokenType.STRING)
     }
 
     private fun symbol(c: Char): Token {
         when (c) {
             // @formatter:off
-            '(' -> return Token(TokenType.LPAREN, text())
-            ')' -> return Token(TokenType.RPAREN, text())
-            '{' -> return Token(TokenType.LBRACE, text())
-            '}' -> return Token(TokenType.RBRACE, text())
-            '[' -> return Token(TokenType.LBRACKET, text())
-            ']' -> return Token(TokenType.RBRACKET, text())
-            '-' -> return Token(TokenType.MINUS, text())
-            '+' -> return Token(TokenType.PLUS, text())
-            '*' -> return Token(TokenType.STAR, text())
-            '/' -> return Token(TokenType.SLASH, text())
-            '=' -> return Token(if (this.match('=')) TokenType.EQEQ else TokenType.EQ, text())
-            '!' -> return Token(if (this.match('=')) TokenType.BANGEQ else TokenType.BANG, text())
-            '<' -> return Token(if (this.match('=')) TokenType.LTEQ else TokenType.LT, text())
-            '>' -> return Token(if (this.match('=')) TokenType.GTEQ else TokenType.GT, text())
-            '&' -> return Token(if (this.match('&')) TokenType.AMPAMP else TokenType.AMP, text())
-            '|' -> return Token(if (this.match('|')) TokenType.BARBAR else TokenType.ERROR, text())
-            ';' -> return Token(TokenType.SEMICOLON, text())
-            ':' -> return Token(TokenType.COLON, text())
-            ',' -> return Token(TokenType.COMMA, text())
-            '.' -> return Token(TokenType.DOT, text())
-            '@' -> return Token(TokenType.AT, text())
-            else -> return Token(TokenType.ERROR, text())
+            '(' -> return token(TokenType.LPAREN)
+            ')' -> return token(TokenType.RPAREN)
+            '{' -> return token(TokenType.LBRACE)
+            '}' -> return token(TokenType.RBRACE)
+            '[' -> return token(TokenType.LBRACKET)
+            ']' -> return token(TokenType.RBRACKET)
+            '-' -> return token(TokenType.MINUS)
+            '+' -> return token(TokenType.PLUS)
+            '*' -> return token(TokenType.STAR)
+            '/' -> return token(TokenType.SLASH)
+            '=' -> return token(if (this.match('=')) TokenType.EQEQ else TokenType.EQ)
+            '!' -> return token(if (this.match('=')) TokenType.BANGEQ else TokenType.BANG)
+            '<' -> return token(if (this.match('=')) TokenType.LTEQ else TokenType.LT)
+            '>' -> return token(if (this.match('=')) TokenType.GTEQ else TokenType.GT)
+            '&' -> return token(if (this.match('&')) TokenType.AMPAMP else TokenType.AMP)
+            '|' -> return token(if (this.match('|')) TokenType.PIPEPIPE else TokenType.ERROR)
+            ';' -> return token(TokenType.SEMICOLON)
+            ':' -> return token(TokenType.COLON)
+            ',' -> return token(TokenType.COMMA)
+            '.' -> return token(TokenType.DOT)
+            '@' -> return token(TokenType.AT)
+            else -> return token(TokenType.ERROR)
             // @formatter:on
         }
     }
@@ -125,6 +139,7 @@ class Lexer(
         }
 
         when (this.source[this.start]) {
+            'b' -> return checkKeyword(1, 4, "reak", TokenType.BREAK)
             'c' -> return checkKeyword(1, 4, "onst", TokenType.CONST)
             'e' -> {
                 if (this.cursor - this.start > 1) {
@@ -147,7 +162,14 @@ class Lexer(
             'l' -> return checkKeyword(1, 2, "et", TokenType.LET)
             'm' -> return checkKeyword(1, 2, "ut", TokenType.MUT)
             'r' -> return checkKeyword(1, 5, "eturn", TokenType.RETURN)
-            's' -> return checkKeyword(1, 5, "truct", TokenType.STRUCT)
+            's' -> {
+                if (this.cursor - this.start > 1) {
+                    when (this.source[this.start + 1]) {
+                        'p' -> return checkKeyword(2, 2, "ec", TokenType.SPEC)
+                        't' -> return checkKeyword(2, 4, "ruct", TokenType.STRUCT)
+                    }
+                }
+            }
             't' -> {
                 if (this.cursor - this.start > 1) {
                     when (this.source[this.start + 1]) {
@@ -206,4 +228,6 @@ class Lexer(
     private fun isDigit(c: Char): Boolean {
         return c in '0'..'9';
     }
+
+    private fun token(type: TokenType) = Token(type, text(), Span(start, cursor))
 }

@@ -2,9 +2,9 @@ package org.acornlang.eval
 
 import org.acornlang.Environment
 import org.acornlang.Parser
-import org.acornlang.ast.*
+import org.acornlang.syntax.*
 import org.acornlang.fail
-import org.acornlang.lexer.TokenType
+import org.acornlang.lex.TokenType
 //import java.lang.foreign.Linker
 //import java.lang.foreign.SegmentAllocator
 import java.lang.invoke.MethodHandle

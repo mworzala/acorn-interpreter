@@ -1,4 +1,6 @@
-package org.acornlang.ast
+package org.acornlang.syntax
+
+import org.acornlang.common.text.Span
 
 class SyntaxTreeBuilder {
     private lateinit var root: SyntaxNode

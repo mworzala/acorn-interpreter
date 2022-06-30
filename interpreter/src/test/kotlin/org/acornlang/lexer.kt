@@ -1,7 +1,7 @@
 package org.acornlang
 
-import org.acornlang.lexer.Lexer
-import org.acornlang.lexer.TokenType
+import org.acornlang.lex.Lexer
+import org.acornlang.lex.TokenType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

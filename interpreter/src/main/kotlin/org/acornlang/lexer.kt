@@ -1,4 +1,4 @@
-package org.acornlang.lexer
+package org.acornlang.lex
 
 import org.acornlang.fail
 

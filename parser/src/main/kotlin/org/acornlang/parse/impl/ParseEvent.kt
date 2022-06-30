@@ -1,6 +1,7 @@
-package org.acornlang.parse
+package org.acornlang.parse.impl
 
-import org.acornlang.ast.SyntaxKind
+import org.acornlang.parse.ParseError
+import org.acornlang.syntax.SyntaxKind
 
 sealed interface ParseEvent {
 
@@ -11,5 +12,7 @@ sealed interface ParseEvent {
     object FinishNode : ParseEvent
 
     object Placeholder : ParseEvent
+
+    class Error(val error: ParseError) : ParseEvent
 
 }
