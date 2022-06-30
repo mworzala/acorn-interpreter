@@ -120,7 +120,7 @@ private class DeclFinder(
         return node.init.visit(this, ctx)
     }
 
-    override fun visitIntrinsicCall(node: AstIntrinsicCall, ctx: String): Value? {
+    override fun visitIntrinsicCall(node: AstIntrinsicCall, ctx: String): Value {
         if (node.name != "import")
             throw IllegalStateException("Intrinsic '${node.name}' not supported in module context")
         if (node.args.size != 1)

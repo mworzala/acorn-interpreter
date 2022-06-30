@@ -134,8 +134,8 @@ class Lexer(
         fun checkKeyword(start: Int, length: Int, rest: String, type: TokenType): TokenType {
             if (this.cursor - this.start == start + length &&
                 this.source.substring(this.start + start, this.cursor) == rest)
-                return type;
-            return TokenType.IDENT;
+                return type
+            return TokenType.IDENT
         }
 
         when (this.source[this.start]) {
@@ -193,19 +193,19 @@ class Lexer(
     }
 
     private fun atEnd(): Boolean {
-        return this.cursor >= this.source.length;
+        return this.cursor >= this.source.length
     }
 
     private fun peek0(): Char {
         if (this.atEnd())
             return '\u0000'
-        return this.source[this.cursor];
+        return this.source[this.cursor]
     }
 
     private fun peek1(): Char {
         if (this.cursor >= this.source.length - 1)
             return '\u0000'
-        return this.source[this.cursor + 1];
+        return this.source[this.cursor + 1]
     }
 
     private fun advance(): Char {
@@ -215,18 +215,18 @@ class Lexer(
     }
 
     private fun match(c: Char): Boolean {
-        if (this.atEnd()) return false;
-        if (this.peek0() != c) return false;
-        this.advance();
-        return true;
+        if (this.atEnd()) return false
+        if (this.peek0() != c) return false
+        this.advance()
+        return true
     }
 
     private fun isAlpha(c: Char): Boolean {
-        return c in 'a'..'z' || c in 'A'..'Z' || c == '_';
+        return c in 'a'..'z' || c in 'A'..'Z' || c == '_'
     }
 
     private fun isDigit(c: Char): Boolean {
-        return c in '0'..'9';
+        return c in '0'..'9'
     }
 
     private fun token(type: TokenType) = Token(type, text(), Span(start, cursor))

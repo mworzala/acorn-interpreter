@@ -24,7 +24,7 @@ class AcornStructureAwareNavbar : StructureAwareNavBarModelExtension() {
             return AllIcons.Nodes.Function
         }
 
-        return null;
+        return null
     }
 
 }

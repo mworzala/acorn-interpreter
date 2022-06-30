@@ -39,7 +39,7 @@ class AcornFoldingBuilder : FoldingBuilderEx(), DumbAware {
         return descriptors.toTypedArray()
     }
 
-    override fun getPlaceholderText(node: ASTNode): String? {
+    override fun getPlaceholderText(node: ASTNode): String {
         return "{...}"
     }
 

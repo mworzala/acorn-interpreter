@@ -37,22 +37,22 @@ class Lexer(
     private var cursor: Int = 0
 
     fun next(): Token {
-        this.skip_trivia();
-        this.start = this.cursor;
+        this.skip_trivia()
+        this.start = this.cursor
 
         if (this.atEnd()) {
-            return this.newToken(TokenType.EOF);
+            return this.newToken(TokenType.EOF)
         }
 
-        val c = this.advance();
+        val c = this.advance()
         if (isAlpha(c))
-            return this.ident();
+            return this.ident()
         if (isDigit(c))
-            return this.number();
+            return this.number()
         if (c == '"')
-            return this.string();
+            return this.string()
 
-        return this.symbol(c);
+        return this.symbol(c)
     }
 
     // Utilities
@@ -68,31 +68,31 @@ class Lexer(
     }
 
     private fun atEnd(): Boolean {
-        return this.cursor >= this.source.length;
+        return this.cursor >= this.source.length
     }
 
     private fun peek0(): Char {
         if (this.atEnd())
             return '\u0000'
-        return this.source[this.cursor];
+        return this.source[this.cursor]
     }
 
     private fun peek1(): Char {
         if (this.cursor >= this.source.length - 1)
             return '\u0000'
-        return this.source[this.cursor + 1];
+        return this.source[this.cursor + 1]
     }
 
     private fun advance(): Char {
-        this.cursor++;
-        return this.source[this.cursor - 1];
+        this.cursor++
+        return this.source[this.cursor - 1]
     }
 
     private fun match(c: Char): Boolean {
-        if (this.atEnd()) return false;
-        if (this.peek0() != c) return false;
-        this.advance();
-        return true;
+        if (this.atEnd()) return false
+        if (this.peek0() != c) return false
+        this.advance()
+        return true
     }
 
     // Lex functions
@@ -120,34 +120,34 @@ class Lexer(
 
     private fun ident(): Token {
         while (isAlpha(this.peek0()) || isDigit(this.peek0())) {
-            this.advance();
+            this.advance()
         }
-        return this.newToken(this.identOrKeyword());
+        return this.newToken(this.identOrKeyword())
     }
 
     private fun number(): Token {
         while (isDigit(this.peek0())) {
-            this.advance();
+            this.advance()
         }
 
         //todo floating point
 
-        return this.newToken(TokenType.NUMBER);
+        return this.newToken(TokenType.NUMBER)
     }
 
     private fun string(): Token {
         var next = this.peek0()
         while (next != '"' && !this.atEnd()) {
-            if (next == '\n') fail("Newline in string");
-            this.advance();
-            next = this.peek0();
+            if (next == '\n') fail("Newline in string")
+            this.advance()
+            next = this.peek0()
         }
 
         if (this.atEnd())
-            fail("Unterminated string");
+            fail("Unterminated string")
 
         // Eat closing quote
-        this.advance();
+        this.advance()
         return this.newToken(TokenType.STRING)
     }
 
@@ -175,7 +175,7 @@ class Lexer(
             ',' -> return this.newToken(TokenType.COMMA)
             '.' -> return this.newToken(TokenType.DOT)
             '@' -> return this.newToken(TokenType.AT)
-            else -> fail("Unexpected character: ${c.toInt()} '${c}' '${source.substring(cursor)}'")
+            else -> fail("Unexpected character: ${c.code} '${c}' '${source.substring(cursor)}'")
             // @formatter:on
         }
     }
@@ -184,8 +184,8 @@ class Lexer(
         fun checkKeyword(start: Int, length: Int, rest: String, type: TokenType): TokenType {
             if (this.cursor - this.start == start + length &&
                 this.source.substring(this.start + start, this.cursor) == rest)
-                return type;
-            return TokenType.IDENT;
+                return type
+            return TokenType.IDENT
         }
 
         when (this.source[this.start]) {
@@ -228,10 +228,10 @@ class Lexer(
     }
 
     private fun isAlpha(c: Char): Boolean {
-        return c in 'a'..'z' || c in 'A'..'Z' || c == '_';
+        return c in 'a'..'z' || c in 'A'..'Z' || c == '_'
     }
 
     private fun isDigit(c: Char): Boolean {
-        return c in '0'..'9';
+        return c in '0'..'9'
     }
 }

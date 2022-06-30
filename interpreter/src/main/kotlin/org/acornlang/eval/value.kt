@@ -162,7 +162,7 @@ abstract class FnValue(
     context: Context,
 ) : Value(context) {
 
-    override abstract val type: FnType
+    abstract override val type: FnType
 
     operator fun invoke(vararg args: Value) = invoke(args.toList())
     abstract operator fun invoke(args: List<Value>): Value
