@@ -10,9 +10,8 @@ class LiteralExprTest {
         checkExpr("""
             123
         """.trimIndent(), """
-ROOT@0..3
-  LITERAL@0..3
-    NUMBER@0..3 "123"
+LITERAL@0..3
+  NUMBER@0..3 "123"
         """.trimIndent())
     }
 
@@ -21,9 +20,8 @@ ROOT@0..3
         checkExpr("""
             "Hello, World!"
         """.trimIndent(), """
-ROOT@0..15
-  LITERAL@0..15
-    STRING@0..15 ""Hello, World!""
+LITERAL@0..15
+  STRING@0..15 ""Hello, World!""
         """.trimIndent())
     }
 
@@ -32,9 +30,8 @@ ROOT@0..15
         checkExpr("""
             true
         """.trimIndent(), """
-ROOT@0..4
-  LITERAL@0..4
-    BOOL@0..4 "true"
+LITERAL@0..4
+  BOOL@0..4 "true"
         """.trimIndent())
     }
 
@@ -43,9 +40,18 @@ ROOT@0..4
         checkExpr("""
             false
         """.trimIndent(), """
-ROOT@0..5
-  LITERAL@0..5
-    BOOL@0..5 "false"
+LITERAL@0..5
+  BOOL@0..5 "false"
+        """.trimIndent())
+    }
+
+    @Test
+    fun `intrinsic identifier`() {
+        checkExpr("""
+            import!
+        """.trimIndent(), """
+INTRINSIC@0..7
+  INTRINSIC_IDENT@0..7 "import!"
         """.trimIndent())
     }
 

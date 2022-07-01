@@ -1,21 +1,42 @@
 package org.acornlang.syntax
 
 enum class SyntaxKind {
-    ROOT, ERROR,
+
+    MODULE,
+
+    // SECTION: Container Items
+    // ========================
+
+    CONST_DECL, CONST,
+
+    NAMED_FN_DECL, FN_DECL, FN_TYPE, FN,
+    FN_PARAM_LIST, FN_PARAM,
+
+    NAMED_ENUM_DECL, ENUM_DECL, ENUM,
+    ENUM_CASE_LIST, ENUM_CASE,
+
+    NAMED_STRUCT_DECL, STRUCT_DECL, STRUCT,
+    STRUCT_FIELD_LIST, STRUCT_FIELD,
+
+    NAMED_UNION_DECL, UNION_DECL, UNION,
+    UNION_MEMBER_LIST, UNION_MEMBER,
+
+    NAMED_SPEC_DECL, SPEC_DECL, SPEC,
 
     // SECTION: Statements
     // ===================
 
     // keyword / decl
-    LET, VAR_DECL,
+    VAR_DECL, LET, MUT,
 
 
     // SECTION: Expressions
     // ====================
 
     // Literals
-    LITERAL, NUMBER, STRING, BOOL, IDENT,
-    VAR_REF,
+    LITERAL, NUMBER, STRING, BOOL,
+    VAR_REF, IDENT,
+    INTRINSIC, INTRINSIC_IDENT,
 
     // Operators
     PREFIX_EXPR, INFIX_EXPR, POSTFIX_EXPR,
@@ -26,6 +47,25 @@ enum class SyntaxKind {
 
     // Misc
     PAREN_EXPR,
+    BLOCK, RET_INLINE,
+    ASSIGN,
+    MEMBER_ACCESS,
+    TYPE_UNION,
+    TUPLE_LITERAL,
+    ARRAY_LITERAL,
+    INDEX,
+    REFERENCE,
+
+    CONSTRUCT, CONSTRUCT_FIELD_LIST, CONSTRUCT_FIELD,
+
+    CALL, CALL_ARG_LIST,
+
+    RETURN_STMT, RETURN,
+    BREAK_STMT, BREAK,
+    CONTINUE_STMT, CONTINUE,
+
+    IF_EXPR, IF, ELSE,
+    WHILE_EXPR, WHILE,
 
 
     // SECTION: Remaining symbols
@@ -35,16 +75,14 @@ enum class SyntaxKind {
     LPAREN, RPAREN,
     LBRACE, RBRACE,
     LBRACKET, RBRACKET,
-    EQ,
     SEMICOLON, COLON, COMMA,
-    DOT, AT,
+    EQ, DOT, AT,
 
     // Keywords todo move to nearby their usage
-    BREAK, CONST, ELSE, ENUM,
-    FN, FOREIGN, IF, MUT, RETURN,
-    SPEC, STRUCT, TYPE, UNION, WHILE,
+    FOREIGN,
 
     // Special
     COMMENT, DOC_COMMENT,
-    WHITESPACE
+    WHITESPACE,
+    ERROR,
 }

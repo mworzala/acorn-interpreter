@@ -73,7 +73,19 @@ class Lexer(
         while (isAlpha(peek0()) || isDigit(peek0()))
             advance()
 
-        return token(identOrKeyword())
+        // Could be keyword
+        val result = identOrKeyword()
+        if (result != TokenType.IDENT)
+            return token(result)
+
+        // Could be an intrinsic identifier.
+        if (peek0() == '!') {
+            advance()
+            return token(TokenType.INTRINSIC_IDENT)
+        }
+
+        // Regular identifier
+        return token(TokenType.IDENT)
     }
 
     private fun number(): Token {
@@ -140,7 +152,26 @@ class Lexer(
 
         when (this.source[this.start]) {
             'b' -> return checkKeyword(1, 4, "reak", TokenType.BREAK)
-            'c' -> return checkKeyword(1, 4, "onst", TokenType.CONST)
+            'c' -> {
+                if (this.cursor - this.start > 1) {
+                    when(this.source[this.start + 1]) {
+                        'o' -> {
+                            if (this.cursor - this.start > 2) {
+                                when(this.source[this.start + 2]) {
+                                    'n' -> {
+                                        if (this.cursor - this.start > 3) {
+                                            when(this.source[this.start + 3]) {
+                                                's' -> return checkKeyword(4, 1, "t", TokenType.CONST)
+                                                't' -> return checkKeyword(4, 4, "inue", TokenType.CONTINUE)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             'e' -> {
                 if (this.cursor - this.start > 1) {
                     when(this.source[this.start + 1]) {
@@ -174,7 +205,6 @@ class Lexer(
                 if (this.cursor - this.start > 1) {
                     when (this.source[this.start + 1]) {
                         'r' -> return checkKeyword(2, 2, "ue", TokenType.TRUE)
-                        'y' -> return checkKeyword(2, 2, "pe", TokenType.TYPE)
                     }
                 }
             }

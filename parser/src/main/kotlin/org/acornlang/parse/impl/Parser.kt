@@ -8,7 +8,7 @@ import org.acornlang.lex.TokenType
 import org.acornlang.parse.ParseError
 
 // Convenience definitions
-internal typealias Marker = Parser.CompletedMarker
+internal typealias Marker = Parser.Marker
 internal typealias CompletedMarker = Parser.CompletedMarker
 
 internal class Parser(
@@ -16,10 +16,10 @@ internal class Parser(
     val lexer: Lexer = Lexer(input),
 ) {
     companion object {
-        private val RECOVERY_SET = listOf(TokenType.LET)
+        private val RECOVERY_SET = listOf(TokenType.LET, TokenType.EQ)
     }
 
-    val expectedKinds = mutableListOf<TokenType>()
+    val expectedKinds = mutableSetOf<TokenType>()
     val events = mutableListOf<ParseEvent>()
 
     init {
@@ -65,6 +65,11 @@ internal class Parser(
     fun expect(type: TokenType) {
         if (!match(type))
             error()
+    }
+
+    fun resetErrorTokens(to: TokenType? = null) {
+        expectedKinds.clear()
+        if (to != null) expectedKinds.add(to)
     }
 
     /**
@@ -143,7 +148,7 @@ internal class Parser(
 
     private fun atSet(set: List<TokenType>): Boolean = set.contains(peek())
 
-    private fun atEnd() = peek() == null
+    fun atEnd() = peek() == null
 
     private fun eatTrivia() {
         while (lexer.peek()?.type?.isTrivia() == true) {

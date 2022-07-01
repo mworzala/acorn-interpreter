@@ -111,6 +111,7 @@ private fun TokenType.toSyntaxKind(): SyntaxKind = when (this) {
     // Keywords
     TokenType.BREAK -> SyntaxKind.BREAK
     TokenType.CONST -> SyntaxKind.CONST
+    TokenType.CONTINUE -> SyntaxKind.CONTINUE
     TokenType.ELSE -> SyntaxKind.ELSE
     TokenType.ENUM -> SyntaxKind.ENUM
     TokenType.FN -> SyntaxKind.FN
@@ -121,7 +122,6 @@ private fun TokenType.toSyntaxKind(): SyntaxKind = when (this) {
     TokenType.RETURN -> SyntaxKind.RETURN
     TokenType.SPEC -> SyntaxKind.SPEC
     TokenType.STRUCT -> SyntaxKind.STRUCT
-    TokenType.TYPE -> SyntaxKind.TYPE
     TokenType.UNION -> SyntaxKind.UNION
     TokenType.WHILE -> SyntaxKind.WHILE
 
@@ -130,6 +130,7 @@ private fun TokenType.toSyntaxKind(): SyntaxKind = when (this) {
     TokenType.STRING -> SyntaxKind.STRING
     TokenType.TRUE, TokenType.FALSE -> SyntaxKind.BOOL
     TokenType.IDENT -> SyntaxKind.IDENT
+    TokenType.INTRINSIC_IDENT -> SyntaxKind.INTRINSIC_IDENT
 
     // Special
     TokenType.COMMENT -> SyntaxKind.COMMENT

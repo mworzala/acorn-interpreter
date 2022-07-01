@@ -65,5 +65,6 @@ class LexerTest {
 
         // Ident
         check("hello", TokenType.IDENT)
+        check("hello!", TokenType.INTRINSIC_IDENT)
     }
 }

@@ -23,12 +23,10 @@ fun parse(input: String): ParseResult = parse(input, Parser::module)
  * Parses a string of Acorn source code given the provided parse rule. Used above for public parsing api, and in tests
  * to parse small snippets in isolation.
  */
-internal fun parse(input: String, rule: Parser.() -> CompletedMarker?): ParseResult {
+internal fun parse(input: String, rule: Parser.(Boolean) -> CompletedMarker?): ParseResult {
     val parser = Parser(input)
 
-    val m = parser.start()
-    parser.rule()
-    m.complete(SyntaxKind.ROOT)
+    parser.rule(true)
 
     val sink = Sink(parser.lexer, parser.events)
     return sink.finish()
