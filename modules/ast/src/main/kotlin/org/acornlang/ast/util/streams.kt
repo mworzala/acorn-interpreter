@@ -7,6 +7,9 @@ import java.util.stream.Stream
  */
 fun <T> Stream<T>.firstOrNull(): T? = findFirst().orElse(null)
 
+fun <T> Stream<T>.collectNonNull(): List<T & Any> =
+    filter { it != null }.map { it!! }.toList()
+
 /**
  * Skip elements until the predicate passes.
  * The stream will be left with the matching element first in the stream.

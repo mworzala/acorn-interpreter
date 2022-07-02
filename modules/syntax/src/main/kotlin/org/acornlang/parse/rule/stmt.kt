@@ -28,9 +28,9 @@ private fun Parser.varDecl(extended: Boolean): CompletedMarker {
     if (match(TokenType.COLON))
         expr(false)
 
-    // Initializer
-    expect(TokenType.EQ)
-    expr(extended)
+    // Initializer (optional here, but that is a semantic error.
+    if (match(TokenType.EQ))
+        expr(extended)
 
     return m.complete(SyntaxKind.VAR_DECL)
 }

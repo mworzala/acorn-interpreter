@@ -23,7 +23,7 @@ internal fun Parser.block(extended: Boolean): CompletedMarker {
             bump()
         } else if (at(TokenType.RBRACE)) {
             // Add inline return here
-            stmt.precede().complete(SyntaxKind.RET_INLINE)
+            stmt.precede().complete(SyntaxKind.IMPLICIT_RETURN)
         } else {
             resetErrorTokens(to = TokenType.SEMICOLON)
             error()
@@ -261,7 +261,11 @@ private fun Parser.array(extended: Boolean): CompletedMarker {
     val m = start()
     expect(TokenType.LBRACKET)
 
-    expr(true)
+    while (!at(TokenType.RBRACKET)) {
+        expr(true)
+        if (!at(TokenType.RBRACKET))
+            expect(TokenType.COMMA)
+    }
 
     expect(TokenType.RBRACKET)
     return m.complete(SyntaxKind.ARRAY_LITERAL)

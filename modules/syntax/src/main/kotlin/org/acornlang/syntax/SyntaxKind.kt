@@ -51,7 +51,7 @@ enum class SyntaxKind {
 
     // Misc
     PAREN_EXPR,
-    BLOCK, RET_INLINE,
+    BLOCK, IMPLICIT_RETURN,
     ASSIGN,
     MEMBER_ACCESS,
     TYPE_UNION,

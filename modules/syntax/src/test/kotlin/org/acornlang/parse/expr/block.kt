@@ -79,3 +79,27 @@ error at 3..4: expected [SEMICOLON], found NUMBER
     }
 
 }
+
+class TestBlockRegression {
+    @Test
+    fun `block with let`() {
+        checkExpr("""
+            {let foo = 1;}
+        """.trimIndent(), """
+BLOCK@0..14
+  LBRACE@0..1 "{"
+  VAR_DECL@1..12
+    LET@1..4 "let"
+    WHITESPACE@4..5 " "
+    IDENT@5..8 "foo"
+    WHITESPACE@8..9 " "
+    EQ@9..10 "="
+    WHITESPACE@10..11 " "
+    LITERAL@11..12
+      NUMBER@11..12 "1"
+  SEMICOLON@12..13 ";"
+  RBRACE@13..14 "}"
+        """.trimIndent())
+    }
+
+}
