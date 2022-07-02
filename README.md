@@ -25,4 +25,9 @@ Tooling
 Bootstrapping
 - `examples`: will contain example Acorn programs
 - Eventually there will be some Acorn sources for standard library and the bootstrapped compiler.
-- 
+
+
+
+
+Scratch spot:
+- Currently have a syntax problem. A void return type is an empty tuple, but typing `fn() ()` is extremely weird. Need to either introduce a `:` after param list, or figure somethign else out.
