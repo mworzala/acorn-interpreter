@@ -71,6 +71,30 @@ class TestIntrinsic {
 
 }
 
+class TestReference {
+
+    @Test
+    fun `simple case`() {
+        val decl = parseExpr<AstReference>("&1")
+
+        assertFalse(decl.mut)
+
+        val expr = decl.expr.assert<AstLiteral>()
+        assertEquals("1", expr.value?.text)
+    }
+
+    @Test
+    fun `mut reference`() {
+        val decl = parseExpr<AstReference>("&mut 1")
+
+        assertTrue(decl.mut)
+
+        val expr = decl.expr.assert<AstLiteral>()
+        assertEquals("1", expr.value?.text)
+    }
+
+}
+
 class TestBinaryExpr {
 
     @Test
@@ -276,4 +300,130 @@ class TestBlockExpr {
         assertEquals("2", expr2expr.value?.text)
     }
 
+}
+
+class TestConstructExpr {
+
+    @Test
+    fun `empty construct`() {
+        val construct = parseExpr<AstConstruct>("Foo {}")
+        val fieldList = construct.fields.assert<AstConstructFieldList>()
+        assertEquals(0, fieldList.fields.size)
+
+        val target = construct.target.assert<AstVarRef>()
+        assertEquals("Foo", target.name?.text)
+    }
+
+    @Test
+    fun `multi field construct`() {
+        val construct = parseExpr<AstConstruct>("Foo { bar: 1, baz: 2 }")
+        val fieldList = construct.fields.assert<AstConstructFieldList>()
+        assertEquals(2, fieldList.fields.size)
+
+        val target = construct.target.assert<AstVarRef>()
+        assertEquals("Foo", target.name?.text)
+
+        val field1 = fieldList.fields[0].assert<AstConstructField>()
+        assertEquals("bar", field1.name?.text)
+        val expr1 = field1.expr.assert<AstLiteral>()
+        assertEquals("1", expr1.value?.text)
+
+        val field2 = fieldList.fields[1].assert<AstConstructField>()
+        assertEquals("baz", field2.name?.text)
+        val expr2 = field2.expr.assert<AstLiteral>()
+        assertEquals("2", expr2.value?.text)
+    }
+}
+
+class TestCallExpr {
+
+    @Test
+    fun `empty call`() {
+        val call = parseExpr<AstCall>("foo()")
+        val args = call.args.assert<AstCallArgList>()
+        assertEquals(0, args.args.size)
+
+        val target = call.target.assert<AstVarRef>()
+        assertEquals("foo", target.name?.text)
+    }
+
+    @Test
+    fun `single arg call`() {
+        val call = parseExpr<AstCall>("foo(1)")
+        val args = call.args.assert<AstCallArgList>()
+        assertEquals(1, args.args.size)
+
+        val target = call.target.assert<AstVarRef>()
+        assertEquals("foo", target.name?.text)
+
+        val arg1 = args.args[0].assert<AstLiteral>()
+        assertEquals("1", arg1.value?.text)
+    }
+
+    @Test
+    fun `multi field construct`() {
+        val call = parseExpr<AstCall>("foo(1, 2)")
+        val args = call.args.assert<AstCallArgList>()
+        assertEquals(2, args.args.size)
+
+        val target = call.target.assert<AstVarRef>()
+        assertEquals("foo", target.name?.text)
+
+        val arg1 = args.args[0].assert<AstLiteral>()
+        assertEquals("1", arg1.value?.text)
+
+        val arg2 = args.args[1].assert<AstLiteral>()
+        assertEquals("2", arg2.value?.text)
+    }
+}
+
+class TestIfExpr {
+
+    @Test
+    fun `if no else`() {
+        val decl = parseExpr<AstIf>("if 1 {}")
+
+        val cond = decl.cond.assert<AstLiteral>()
+        assertEquals("1", cond.value?.text)
+
+        decl.thenBranch.assert<AstBlock>()
+        assertNull(decl.elseBranch)
+    }
+
+    @Test
+    fun `if else`() {
+        val decl = parseExpr<AstIf>("if 1 {} else {}")
+
+        val cond = decl.cond.assert<AstLiteral>()
+        assertEquals("1", cond.value?.text)
+
+        decl.thenBranch.assert<AstBlock>()
+        decl.elseBranch.assert<AstBlock>()
+    }
+
+
+    @Test
+    fun `if else if`() {
+        val decl = parseExpr<AstIf>("if 1 {} else if 2 {}")
+        val cond1 = decl.cond.assert<AstLiteral>()
+        assertEquals("1", cond1.value?.text)
+
+        val elseIf = decl.elseBranch.assert<AstIf>()
+        val cond2 = elseIf.cond.assert<AstLiteral>()
+        assertEquals("2", cond2.value?.text)
+    }
+
+}
+
+class TestWhileExpr {
+
+    @Test
+    fun `simple while`() {
+        val decl = parseExpr<AstWhile>("while 1 {}")
+
+        val cond = decl.cond.assert<AstLiteral>()
+        assertEquals("1", cond.value?.text)
+
+        decl.body.assert<AstBlock>()
+    }
 }

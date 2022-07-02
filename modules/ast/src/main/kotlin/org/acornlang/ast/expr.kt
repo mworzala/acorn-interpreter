@@ -12,6 +12,7 @@ open class AstExpr(syntax: SyntaxNode) : AstNode(syntax) {
             SyntaxKind.LITERAL -> AstLiteral(node)
             SyntaxKind.VAR_REF -> AstVarRef(node)
             SyntaxKind.INTRINSIC -> AstIntrinsic(node)
+            SyntaxKind.REFERENCE -> AstReference(node)
 
             SyntaxKind.INFIX_EXPR -> AstBinary(node)
             SyntaxKind.PREFIX_EXPR, SyntaxKind.POSTFIX_EXPR -> AstUnary(node)
@@ -26,6 +27,16 @@ open class AstExpr(syntax: SyntaxNode) : AstNode(syntax) {
 
             SyntaxKind.BLOCK -> AstBlock(node)
             SyntaxKind.IMPLICIT_RETURN -> AstImplicitReturn(node)
+
+            SyntaxKind.CONSTRUCT -> AstConstruct(node)
+            SyntaxKind.CONSTRUCT_FIELD_LIST -> AstConstructFieldList(node)
+            SyntaxKind.CONSTRUCT_FIELD -> AstConstructField(node)
+
+            SyntaxKind.CALL -> AstCall(node)
+            SyntaxKind.CALL_ARG_LIST -> AstCallArgList(node)
+
+            SyntaxKind.IF_EXPR -> AstIf(node)
+            SyntaxKind.WHILE_EXPR -> AstWhile(node)
 
             else -> null
         }
@@ -56,6 +67,13 @@ class AstVarRef(syntax: SyntaxNode) : AstExpr(syntax) {
 
 class AstIntrinsic(syntax: SyntaxNode) : AstExpr(syntax) {
     val name: SyntaxToken? get() = token()
+}
+
+class AstReference(syntax: SyntaxNode) : AstExpr(syntax) {
+    val mut: Boolean get() = firstTokenOfType(SyntaxKind.MUT) != null
+
+    val expr: AstExpr? get() =
+        node()?.let(AstExpr::castOrNull)
 }
 
 class AstUnary(syntax: SyntaxNode) : AstExpr(syntax) {
@@ -130,4 +148,56 @@ class AstBlock(syntax: SyntaxNode) : AstExpr(syntax) {
 class AstImplicitReturn(syntax: SyntaxNode) : AstExpr(syntax) {
     val expr: AstExpr?
         get() = node()?.let(AstExpr::castOrNull)
+}
+
+class AstConstruct(syntax: SyntaxNode) : AstExpr(syntax) {
+    val target: AstExpr? get() =
+        node()?.let(AstExpr::castOrNull)
+
+    val fields: AstConstructFieldList? get() =
+        node(skip = 1)?.let(::AstConstructFieldList)
+}
+
+class AstConstructFieldList(syntax: SyntaxNode) : AstExpr(syntax) {
+    val fields: List<AstConstructField> get() =
+        children().nodes().map(::AstConstructField).collectNonNull()
+}
+
+class AstConstructField(syntax: SyntaxNode) : AstExpr(syntax) {
+    val name: SyntaxToken? get() = token()
+
+    val expr: AstExpr? get() =
+        node()?.let(AstExpr::castOrNull)
+}
+
+class AstCall(syntax: SyntaxNode) : AstExpr(syntax) {
+    val target: AstExpr? get() =
+        node()?.let(AstExpr::castOrNull)
+
+    val args: AstCallArgList? get() =
+        node(skip = 1)?.let(::AstCallArgList)
+}
+
+class AstCallArgList(syntax: SyntaxNode) : AstExpr(syntax) {
+    val args: List<AstExpr> get() =
+        children().nodes().map(AstExpr::castOrNull).collectNonNull()
+}
+
+class AstIf(syntax: SyntaxNode) : AstExpr(syntax) {
+    val cond: AstExpr? get() =
+        node()?.let(AstExpr::castOrNull)
+
+    val thenBranch: AstExpr? get() =
+        node(skip = 1)?.let(AstExpr::castOrNull)
+
+    val elseBranch: AstExpr? get() =
+        node(skip = 2)?.let(AstExpr::castOrNull)
+}
+
+class AstWhile(syntax: SyntaxNode) : AstExpr(syntax) {
+    val cond: AstExpr? get() =
+        node()?.let(AstExpr::castOrNull)
+
+    val body: AstExpr? get() =
+        node(skip = 1)?.let(AstExpr::castOrNull)
 }
