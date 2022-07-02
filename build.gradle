@@ -27,18 +27,7 @@ allprojects {
 
     test {
         useJUnitPlatform()
-//        jvmArgs("--enable-preview")
     }
-
-//    java {
-//        toolchain {
-//            languageVersion.set(JavaLanguageVersion.of(19))
-//        }
-//    }
-//
-//    tasks.withType(JavaCompile) {
-//        options.compilerArgs.add("--enable-preview")
-//    }
 
 }
 

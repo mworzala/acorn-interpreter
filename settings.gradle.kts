@@ -1,8 +1,11 @@
 rootProject.name = "acorn"
-include("common")
-include("lexer")
-include("syntax")
-include("parser")
-include("interpreter")
 
-include("intellij")
+include("modules")
+include("modules:common")
+include("modules:lexer")
+include("modules:syntax")
+include("modules:ast")
+include("modules:interpreter")
+
+include("tools")
+include("tools:intellij")

@@ -4,9 +4,7 @@ Acorn
 - `common`: Common types and utilities across multiple unrelated dependencies
 - `lexer`: Standalone lexer for Acorn
 - `syntax`: Standalone syntax tree implementation with language specific syntax elements
-- `parser`: Parser for going from source code into a syntax tree (this step is lossless)
-  - Depends `lexer`, `syntax`
-  - todo should this just be merged into syntax? `ast` will contain conversion, `hir` will contain ast lowering step. it probably makes some sense.
+- - Depends `lexer`
 - `ast`: (todo) Abstract syntax tree on top of the syntax tree built by the parser
   - Depends `syntax`
 - `hir`: (todo) High level intermediate representation, no longer maintains a full source code representation.
@@ -25,3 +23,4 @@ Tooling
 Bootstrapping
 - `examples`: will contain example Acorn programs
 - Eventually there will be some Acorn sources for standard library and the bootstrapped compiler.
+- 
