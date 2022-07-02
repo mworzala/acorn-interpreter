@@ -38,6 +38,10 @@ open class AstExpr(syntax: SyntaxNode) : AstNode(syntax) {
             SyntaxKind.IF_EXPR -> AstIf(node)
             SyntaxKind.WHILE_EXPR -> AstWhile(node)
 
+            SyntaxKind.FN_DECL -> AstFnDecl(node)
+            SyntaxKind.FN_TYPE -> AstFnType(node)
+            SyntaxKind.ENUM_DECL -> AstEnumDecl(node)
+
             else -> null
         }
     }
