@@ -41,6 +41,9 @@ open class AstExpr(syntax: SyntaxNode) : AstNode(syntax) {
             SyntaxKind.FN_DECL -> AstFnDecl(node)
             SyntaxKind.FN_TYPE -> AstFnType(node)
             SyntaxKind.ENUM_DECL -> AstEnumDecl(node)
+            SyntaxKind.STRUCT_DECL -> AstStructDecl(node)
+            SyntaxKind.UNION_DECL -> AstUnionDecl(node)
+            SyntaxKind.SPEC_DECL -> AstSpecDecl(node)
 
             else -> null
         }

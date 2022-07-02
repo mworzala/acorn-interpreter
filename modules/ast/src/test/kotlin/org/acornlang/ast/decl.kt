@@ -173,3 +173,200 @@ class TestEnumDecl {
         assertEquals("bar", case1.name?.text)
     }
 }
+
+class TestStructDecl {
+
+    @Test
+    fun `empty struct`() {
+        val decl = parseDecl<AstNamedStructDecl>("struct Foo {}")
+        val fields = decl.fields.assert<AstStructFieldList>()
+
+        assertEquals(0, fields.fields.size)
+    }
+
+    @Test
+    fun `single field struct`() {
+        val decl = parseDecl<AstNamedStructDecl>("struct Foo { bar: i32, }")
+        val fields = decl.fields.assert<AstStructFieldList>()
+        assertEquals(1, fields.fields.size)
+
+        val field1 = fields.fields[0].assert<AstStructField>()
+        assertEquals("bar", field1.name?.text)
+        val type1 = field1.type.assert<AstVarRef>()
+        assertEquals("i32", type1.name?.text)
+    }
+
+    @Test
+    fun `multi field struct`() {
+        val decl = parseDecl<AstNamedStructDecl>("struct Foo { bar: i32, baz: i32, }")
+        val fields = decl.fields.assert<AstStructFieldList>()
+        assertEquals(2, fields.fields.size)
+
+        val field1 = fields.fields[0].assert<AstStructField>()
+        assertEquals("bar", field1.name?.text)
+        val type1 = field1.type.assert<AstVarRef>()
+        assertEquals("i32", type1.name?.text)
+
+        val field2 = fields.fields[1].assert<AstStructField>()
+        assertEquals("baz", field2.name?.text)
+        val type2 = field2.type.assert<AstVarRef>()
+        assertEquals("i32", type2.name?.text)
+    }
+
+    @Test
+    fun `struct expr`() {
+        val decl = parseExpr<AstStructDecl>("struct { foo: i32, }")
+        val fields = decl.fields.assert<AstStructFieldList>()
+        assertEquals(1, fields.fields.size)
+
+        val field1 = fields.fields[0].assert<AstStructField>()
+        assertEquals("foo", field1.name?.text)
+        val type1 = field1.type.assert<AstVarRef>()
+        assertEquals("i32", type1.name?.text)
+    }
+
+    @Test
+    fun `struct container members before and after field list`() {
+        val decl = parseDecl<AstNamedStructDecl>("""
+            struct Foo { 
+                const before = 1;
+                
+                bar: i32,
+                 
+                const after = 2;
+            }
+        """.trimIndent())
+
+        val fields = decl.fields.assert<AstStructFieldList>()
+        assertEquals(1, fields.fields.size)
+        val field1 = fields.fields[0].assert<AstStructField>()
+        assertEquals("bar", field1.name?.text)
+        val type1 = field1.type.assert<AstVarRef>()
+        assertEquals("i32", type1.name?.text)
+
+        val members = decl.decls
+        assertEquals(2, members.size)
+        val member1 = members[0].assert<AstConstDecl>()
+        assertEquals("before", member1.name?.text)
+        val member2 = members[1].assert<AstConstDecl>()
+        assertEquals("after", member2.name?.text)
+    }
+}
+
+class TestUnionDecl {
+
+    @Test
+    fun `empty union`() {
+        val decl = parseDecl<AstNamedUnionDecl>("union Foo {}")
+        val members = decl.members.assert<AstUnionMemberList>()
+
+        assertEquals(0, members.members.size)
+    }
+
+    @Test
+    fun `single member union`() {
+        val decl = parseDecl<AstNamedUnionDecl>("union Foo { Bar: i32, }")
+        val members = decl.members.assert<AstUnionMemberList>()
+        assertEquals(1, members.members.size)
+
+        val member1 = members.members[0].assert<AstUnionMember>()
+        assertEquals("Bar", member1.name?.text)
+        val type1 = member1.type.assert<AstVarRef>()
+        assertEquals("i32", type1.name?.text)
+    }
+
+    @Test
+    fun `multi member union`() {
+        val decl = parseDecl<AstNamedUnionDecl>("union Foo { Bar: i32, Baz: f32, }")
+        val members = decl.members.assert<AstUnionMemberList>()
+        assertEquals(2, members.members.size)
+
+        val member1 = members.members[0].assert<AstUnionMember>()
+        assertEquals("Bar", member1.name?.text)
+        val type1 = member1.type.assert<AstVarRef>()
+        assertEquals("i32", type1.name?.text)
+
+        val member2 = members.members[1].assert<AstUnionMember>()
+        assertEquals("Baz", member2.name?.text)
+        val type2 = member2.type.assert<AstVarRef>()
+        assertEquals("f32", type2.name?.text)
+    }
+
+    @Test
+    fun `Union expr`() {
+        val decl = parseExpr<AstUnionDecl>("union { Foo: i32, }")
+        val members = decl.members.assert<AstUnionMemberList>()
+        assertEquals(1, members.members.size)
+
+        val member1 = members.members[0].assert<AstUnionMember>()
+        assertEquals("Foo", member1.name?.text)
+        val type1 = member1.type.assert<AstVarRef>()
+        assertEquals("i32", type1.name?.text)
+    }
+
+    @Test
+    fun `Union container members before and after Member list`() {
+        val decl = parseDecl<AstNamedUnionDecl>("""
+            union Foo { 
+                const before = 1;
+                
+                Bar: i32,
+                 
+                const after = 2;
+            }
+        """.trimIndent())
+
+        val members = decl.members.assert<AstUnionMemberList>()
+        assertEquals(1, members.members.size)
+        val member1 = members.members[0].assert<AstUnionMember>()
+        assertEquals("Bar", member1.name?.text)
+        val type1 = member1.type.assert<AstVarRef>()
+        assertEquals("i32", type1.name?.text)
+
+        val decls = decl.decls
+        assertEquals(2, decls.size)
+        val decl1 = decls[0].assert<AstConstDecl>()
+        assertEquals("before", decl1.name?.text)
+        val decl2 = decls[1].assert<AstConstDecl>()
+        assertEquals("after", decl2.name?.text)
+    }
+}
+
+class TestSpecDecl {
+
+    @Test
+    fun `empty spec`() {
+        val decl = parseDecl<AstNamedSpecDecl>("spec Foo {}")
+        val members = decl.members
+
+        assertEquals(0, members.size)
+    }
+
+    @Test
+    fun `single member spec`() {
+        val decl = parseDecl<AstNamedSpecDecl>("""
+            spec Foo {
+                fn bar() void;
+            }
+        """.trimIndent())
+        val members = decl.members
+        assertEquals(1, members.size)
+
+        val member1 = members[0].assert<AstNamedFnDecl>()
+        assertEquals("bar", member1.name?.text)
+    }
+
+    @Test
+    fun `spec expr`() {
+        val decl = parseExpr<AstSpecDecl>("""
+            spec {
+                fn bar() void;
+            }
+        """.trimIndent())
+        val members = decl.members
+        assertEquals(1, members.size)
+
+        val member1 = members[0].assert<AstNamedFnDecl>()
+        assertEquals("bar", member1.name?.text)
+    }
+}
