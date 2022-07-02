@@ -12,6 +12,9 @@ sealed class AstNode(
     val syntax: SyntaxNode,
 ) {
 
+    abstract fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R
+
+
     // SyntaxNode manipulation
 
     protected fun children() = syntax.children.stream()

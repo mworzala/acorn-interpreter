@@ -5,7 +5,7 @@ import org.acornlang.syntax.SyntaxKind
 import org.acornlang.syntax.SyntaxNode
 import org.acornlang.syntax.SyntaxToken
 
-open class AstExpr(syntax: SyntaxNode) : AstNode(syntax) {
+abstract class AstExpr(syntax: SyntaxNode) : AstNode(syntax) {
 
     companion object {
         fun castOrNull(node: SyntaxNode): AstExpr? = when (node.kind) {
@@ -52,6 +52,7 @@ open class AstExpr(syntax: SyntaxNode) : AstNode(syntax) {
 }
 
 class AstLiteral(syntax: SyntaxNode) : AstExpr(syntax) {
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitLiteral(this, p)
 
     enum class Type {
         NUMBER, STRING, BOOL,
@@ -69,14 +70,23 @@ class AstLiteral(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstVarRef(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitVarRef(this, p)
+
     val name: SyntaxToken? get() = token()
 }
 
 class AstIntrinsic(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitIntrinsic(this, p)
+
     val name: SyntaxToken? get() = token()
 }
 
 class AstReference(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitReference(this, p)
+
     val mut: Boolean get() = firstTokenOfType(SyntaxKind.MUT) != null
 
     val expr: AstExpr? get() =
@@ -84,6 +94,9 @@ class AstReference(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstUnary(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitUnary(this, p)
+
     // Valid to simply get the first token, since it is the only token
     val operator: SyntaxToken? get() = token()
 
@@ -91,6 +104,9 @@ class AstUnary(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstBinary(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitBinary(this, p)
+
     val operator: SyntaxToken? get() = token()
 
     val lhs: AstExpr? get() =
@@ -101,11 +117,17 @@ class AstBinary(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstParenGroup(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitParenGroup(this, p)
+
     val expr: AstExpr?
         get() = node()?.let(AstExpr::castOrNull)
 }
 
 class AstAssign(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitAssign(this, p)
+
     val target: AstExpr? get() =
         node()?.let(AstExpr::castOrNull)
 
@@ -114,6 +136,9 @@ class AstAssign(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstMemberAccess(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitMemberAccess(this, p)
+
     val target: AstExpr? get() =
         node()?.let(AstExpr::castOrNull)
 
@@ -122,6 +147,9 @@ class AstMemberAccess(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstTypeUnion(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitTypeUnion(this, p)
+
     val lhs: AstExpr? get() =
         node()?.let(AstExpr::castOrNull)
 
@@ -130,6 +158,9 @@ class AstTypeUnion(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstIndex(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitIndex(this, p)
+
     val target: AstExpr? get() =
         node()?.let(AstExpr::castOrNull)
 
@@ -138,26 +169,41 @@ class AstIndex(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstArrayLiteral(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitArrayLiteral(this, p)
+
     val exprs: List<AstExpr> get() =
         children().nodes().map(AstExpr::castOrNull).collectNonNull()
 }
 
 class AstTupleLiteral(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitTupleLiteral(this, p)
+
     val exprs: List<AstExpr> get() =
         children().nodes().map(AstExpr::castOrNull).collectNonNull()
 }
 
 class AstBlock(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitBlock(this, p)
+
     val stmts: List<AstStmt>
         get() = children().nodes().map(AstStmt::castOrNull).collectNonNull()
 }
 
 class AstImplicitReturn(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitImplicitReturn(this, p)
+
     val expr: AstExpr?
         get() = node()?.let(AstExpr::castOrNull)
 }
 
 class AstConstruct(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitConstruct(this, p)
+
     val target: AstExpr? get() =
         node()?.let(AstExpr::castOrNull)
 
@@ -166,11 +212,17 @@ class AstConstruct(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstConstructFieldList(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitConstructFieldList(this, p)
+
     val fields: List<AstConstructField> get() =
         children().nodes().map(::AstConstructField).collectNonNull()
 }
 
 class AstConstructField(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitConstructField(this, p)
+
     val name: SyntaxToken? get() = token()
 
     val expr: AstExpr? get() =
@@ -178,6 +230,9 @@ class AstConstructField(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstCall(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitCall(this, p)
+
     val target: AstExpr? get() =
         node()?.let(AstExpr::castOrNull)
 
@@ -186,11 +241,17 @@ class AstCall(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstCallArgList(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitCallArgList(this, p)
+
     val args: List<AstExpr> get() =
         children().nodes().map(AstExpr::castOrNull).collectNonNull()
 }
 
 class AstIf(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitIf(this, p)
+
     val cond: AstExpr? get() =
         node()?.let(AstExpr::castOrNull)
 
@@ -202,6 +263,9 @@ class AstIf(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstWhile(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitWhile(this, p)
+
     val cond: AstExpr? get() =
         node()?.let(AstExpr::castOrNull)
 

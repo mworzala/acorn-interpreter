@@ -5,8 +5,7 @@ import org.acornlang.syntax.SyntaxNode
 import org.acornlang.syntax.SyntaxToken
 
 
-
-open class AstStmt(syntax: SyntaxNode) : AstNode(syntax) {
+abstract class AstStmt(syntax: SyntaxNode) : AstNode(syntax) {
     companion object {
         fun castOrNull(node: SyntaxNode): AstStmt? = when (node.kind) {
             SyntaxKind.VAR_DECL -> AstVarDecl(node)
@@ -19,9 +18,15 @@ open class AstStmt(syntax: SyntaxNode) : AstNode(syntax) {
     }
 }
 
-class AstExprStmt(val expr: AstExpr) : AstStmt(expr.syntax)
+class AstExprStmt(val expr: AstExpr) : AstStmt(expr.syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitExprStmt(this, p)
+
+}
 
 class AstVarDecl(syntax: SyntaxNode) : AstStmt(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitVarDecl(this, p)
 
     val name: SyntaxToken?
         get() = firstTokenOfType(SyntaxKind.IDENT)
@@ -38,10 +43,21 @@ class AstVarDecl(syntax: SyntaxNode) : AstStmt(syntax) {
 }
 
 class AstReturn(syntax: SyntaxNode) : AstStmt(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitReturn(this, p)
+
     val expr: AstExpr?
         get() = node()?.let(AstExpr::castOrNull)
 }
 
-class AstBreak(syntax: SyntaxNode) : AstStmt(syntax)
+class AstBreak(syntax: SyntaxNode) : AstStmt(syntax) {
 
-class AstContinue(syntax: SyntaxNode) : AstStmt(syntax)
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitBreak(this, p)
+
+}
+
+class AstContinue(syntax: SyntaxNode) : AstStmt(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitContinue(this, p)
+
+}

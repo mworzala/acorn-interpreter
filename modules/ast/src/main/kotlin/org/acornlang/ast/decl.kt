@@ -5,7 +5,7 @@ import org.acornlang.syntax.SyntaxKind
 import org.acornlang.syntax.SyntaxNode
 import org.acornlang.syntax.SyntaxToken
 
-open class AstDecl(syntax: SyntaxNode) : AstNode(syntax) {
+abstract class AstDecl(syntax: SyntaxNode) : AstNode(syntax) {
 
     companion object {
         fun castOrNull(node: SyntaxNode): AstDecl? = when (node.kind) {
@@ -29,6 +29,8 @@ open class AstDecl(syntax: SyntaxNode) : AstNode(syntax) {
 
 class AstConstDecl(syntax: SyntaxNode) : AstDecl(syntax) {
 
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitConstDecl(this, p)
+
     val name: SyntaxToken?
         get() = firstTokenOfType(SyntaxKind.IDENT)
 
@@ -47,6 +49,9 @@ class AstConstDecl(syntax: SyntaxNode) : AstDecl(syntax) {
 // NAMED_FN_DECL, FN_DECL, FN_TYPE, FN_PARAM_LIST, FN_PARAM
 
 class AstNamedFnDecl(syntax: SyntaxNode) : AstDecl(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitNamedFnDecl(this, p)
+
     val name: SyntaxToken?
         get() = firstTokenOfType(SyntaxKind.IDENT)
 
@@ -63,6 +68,9 @@ class AstNamedFnDecl(syntax: SyntaxNode) : AstDecl(syntax) {
 }
 
 class AstFnDecl(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitFnDecl(this, p)
+
     val params: AstFnParamList?
         get() = node()?.let(::AstFnParamList)
 
@@ -76,6 +84,9 @@ class AstFnDecl(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstFnType(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitFnType(this, p)
+
     val params: AstFnParamList?
         get() = node()?.let(::AstFnParamList)
 
@@ -85,11 +96,17 @@ class AstFnType(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstFnParamList(syntax: SyntaxNode) : AstNode(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitFnParamList(this, p)
+
     val params: List<AstFnParam>
         get() = children().nodes().withType(SyntaxKind.FN_PARAM).map(::AstFnParam).collectNonNull()
 }
 
 class AstFnParam(syntax: SyntaxNode) : AstNode(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitFnParam(this, p)
+
     val name: SyntaxToken?
         get() = firstTokenOfType(SyntaxKind.IDENT)
 
@@ -102,24 +119,38 @@ class AstFnParam(syntax: SyntaxNode) : AstNode(syntax) {
 // ==================
 
 class AstNamedEnumDecl(syntax: SyntaxNode) : AstDecl(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitNamedEnumDecl(this, p)
+
     val name: SyntaxToken?
         get() = firstTokenOfType(SyntaxKind.IDENT)
 
     val cases: AstEnumCaseList?
         get() = firstNodeOfType(SyntaxKind.ENUM_CASE_LIST)?.let(::AstEnumCaseList)
+
+    //todo container items
 }
 
 class AstEnumDecl(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitEnumDecl(this, p)
+
     val cases: AstEnumCaseList?
         get() = firstNodeOfType(SyntaxKind.ENUM_CASE_LIST)?.let(::AstEnumCaseList)
 }
 
 class AstEnumCaseList(syntax: SyntaxNode) : AstNode(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitEnumCaseList(this, p)
+
     val cases: List<AstEnumCase>
         get() = children().nodes().withType(SyntaxKind.ENUM_CASE).map(::AstEnumCase).collectNonNull()
 }
 
 class AstEnumCase(syntax: SyntaxNode) : AstNode(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitEnumCase(this, p)
+
     val name: SyntaxToken?
         get() = firstTokenOfType(SyntaxKind.IDENT)
 }
@@ -129,6 +160,9 @@ class AstEnumCase(syntax: SyntaxNode) : AstNode(syntax) {
 // ====================
 
 class AstNamedStructDecl(syntax: SyntaxNode) : AstDecl(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitNamedStructDecl(this, p)
+
     val name: SyntaxToken?
         get() = firstTokenOfType(SyntaxKind.IDENT)
 
@@ -140,6 +174,9 @@ class AstNamedStructDecl(syntax: SyntaxNode) : AstDecl(syntax) {
 }
 
 class AstStructDecl(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitStructDecl(this, p)
+
     val fields: AstStructFieldList?
         get() = firstNodeOfType(SyntaxKind.STRUCT_FIELD_LIST)?.let(::AstStructFieldList)
 
@@ -148,11 +185,17 @@ class AstStructDecl(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstStructFieldList(syntax: SyntaxNode) : AstNode(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitStructFieldList(this, p)
+
     val fields: List<AstStructField>
         get() = children().nodes().withType(SyntaxKind.STRUCT_FIELD).map(::AstStructField).collectNonNull()
 }
 
 class AstStructField(syntax: SyntaxNode) : AstNode(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitStructField(this, p)
+
     val name: SyntaxToken?
         get() = firstTokenOfType(SyntaxKind.IDENT)
 
@@ -165,6 +208,9 @@ class AstStructField(syntax: SyntaxNode) : AstNode(syntax) {
 // ===================
 
 class AstNamedUnionDecl(syntax: SyntaxNode) : AstDecl(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitNamedUnionDecl(this, p)
+
     val name: SyntaxToken?
         get() = firstTokenOfType(SyntaxKind.IDENT)
 
@@ -176,6 +222,9 @@ class AstNamedUnionDecl(syntax: SyntaxNode) : AstDecl(syntax) {
 }
 
 class AstUnionDecl(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitUnionDecl(this, p)
+
     val members: AstUnionMemberList?
         get() = firstNodeOfType(SyntaxKind.UNION_MEMBER_LIST)?.let(::AstUnionMemberList)
 
@@ -184,11 +233,17 @@ class AstUnionDecl(syntax: SyntaxNode) : AstExpr(syntax) {
 }
 
 class AstUnionMemberList(syntax: SyntaxNode) : AstNode(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitUnionMemberList(this, p)
+
     val members: List<AstUnionMember>
         get() = children().nodes().withType(SyntaxKind.UNION_MEMBER).map(::AstUnionMember).collectNonNull()
 }
 
 class AstUnionMember(syntax: SyntaxNode) : AstNode(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitUnionMember(this, p)
+
     val name: SyntaxToken?
         get() = firstTokenOfType(SyntaxKind.IDENT)
 
@@ -201,6 +256,9 @@ class AstUnionMember(syntax: SyntaxNode) : AstNode(syntax) {
 // ==================
 
 class AstNamedSpecDecl(syntax: SyntaxNode) : AstDecl(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitNamedSpecDecl(this, p)
+
     val name: SyntaxToken?
         get() = firstTokenOfType(SyntaxKind.IDENT)
 
@@ -211,6 +269,9 @@ class AstNamedSpecDecl(syntax: SyntaxNode) : AstDecl(syntax) {
 }
 
 class AstSpecDecl(syntax: SyntaxNode) : AstExpr(syntax) {
+
+    override fun <P, R> visit(visitor: AstVisitor<P, R>, p: P): R = visitor.visitSpecDecl(this, p)
+
     val members: List<AstNamedFnDecl>
         get() = children().nodes().withType(SyntaxKind.NAMED_FN_DECL).map(::AstNamedFnDecl).collectNonNull()
 }
