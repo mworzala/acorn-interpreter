@@ -37,7 +37,7 @@ BLOCK@0..4
         """.trimIndent(), """
 BLOCK@0..3
   LBRACE@0..1 "{"
-  RET_INLINE@1..2
+  IMPLICIT_RETURN@1..2
     LITERAL@1..2
       NUMBER@1..2 "1"
   RBRACE@2..3 "}"
@@ -54,7 +54,7 @@ BLOCK@0..5
   LITERAL@1..2
     NUMBER@1..2 "1"
   SEMICOLON@2..3 ";"
-  RET_INLINE@3..4
+  IMPLICIT_RETURN@3..4
     LITERAL@3..4
       NUMBER@3..4 "2"
   RBRACE@4..5 "}"

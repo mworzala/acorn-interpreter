@@ -1,5 +1,6 @@
 package org.acornlang.parse
 
+import org.acornlang.common.text.Diff
 import org.acornlang.parse.impl.CompletedMarker
 import org.acornlang.parse.impl.Parser
 import org.acornlang.parse.rule.containerItem
@@ -13,11 +14,17 @@ internal fun check(input: String, expected: String, parseFn: Parser.(Boolean) ->
     try {
         val result = parse(input, parseFn)
 
-        val actual = result.node.toDebugString()
+        val actualStr = result.node.toDebugString()
         val errorStr = result.errors.joinToString("\n") { it.toString() } + '\n'
 
-        // Newlines make the output a but more readable
-        assertEquals('\n' + expected + '\n', '\n' + actual + (if (result.errors.isNotEmpty()) errorStr else ""))
+        val expected = '\n' + expected + '\n'
+        val actual = '\n' + actualStr + (if (result.errors.isNotEmpty()) errorStr else "")
+
+        if (expected != actual) {
+            Diff.emitInlineDiff(expected, actual)
+        }
+
+        assertEquals(expected, actual)
     } catch (e: Throwable) {
         e.printStackTrace()
         assertFalse(true)

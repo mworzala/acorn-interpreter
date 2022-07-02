@@ -44,7 +44,7 @@ WHILE_EXPR@0..25
   BLOCK@12..25
     LBRACE@12..13 "{"
     WHITESPACE@13..18 "\n    "
-    RET_INLINE@18..24
+    IMPLICIT_RETURN@18..24
       INFIX_EXPR@18..24
         LITERAL@18..20
           NUMBER@18..19 "3"

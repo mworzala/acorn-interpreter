@@ -168,7 +168,7 @@ NAMED_FN_DECL@0..40
   BLOCK@27..40
     LBRACE@27..28 "{"
     WHITESPACE@28..33 "\n    "
-    RET_INLINE@33..39
+    IMPLICIT_RETURN@33..39
       INFIX_EXPR@33..39
         VAR_REF@33..35
           IDENT@33..34 "a"
@@ -273,7 +273,7 @@ CONST_DECL@0..49
     BLOCK@35..48
       LBRACE@35..36 "{"
       WHITESPACE@36..41 "\n    "
-      RET_INLINE@41..47
+      IMPLICIT_RETURN@41..47
         INFIX_EXPR@41..47
           VAR_REF@41..43
             IDENT@41..42 "a"
