@@ -7,8 +7,15 @@ package org.acornlang.hir
  *
  * Not a 1:1 mapping from source code, sugar is removed.
  */
-abstract class HirNode {
+sealed class HirNode {
 
     abstract fun <P, R> accept(visitor: HirVisitor<P, R>, p: P): R
+
+
+    internal object None : HirNode() {
+
+        override fun <P, R> accept(visitor: HirVisitor<P, R>, p: P): R =
+            throw UnsupportedOperationException()
+    }
 
 }

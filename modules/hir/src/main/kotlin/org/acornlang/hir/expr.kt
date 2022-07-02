@@ -62,7 +62,7 @@ class HirBinary(
 
     enum class Operator {
         ADD, SUB, MUL, DIV,         // Arithmetic
-        EQ, NEQ, LT, LE, GT, GE,    // Comparison
+        EQ, NE, LT, LE, GT, GE,    // Comparison
         AND, OR,                    // Logical
         //todo bitwise?
     }
@@ -229,7 +229,7 @@ class HirFnType(
 class HirFnParam(
     val name: String,
     val type: HirExpr?,
-) : HirExpr() {
+) : HirNode() {
 
     override fun <P, R> accept(visitor: HirVisitor<P, R>, p: P): R =
         visitor.visitFnParam(this, p)
@@ -270,7 +270,7 @@ class HirStructDecl(
 class HirStructField(
     val name: String,
     val type: HirExpr,
-) : HirExpr() {
+) : HirNode() {
 
     override fun <P, R> accept(visitor: HirVisitor<P, R>, p: P): R =
         visitor.visitStructField(this, p)
@@ -291,7 +291,7 @@ class HirUnionDecl(
 class HirUnionMember(
     val name: String,
     val type: HirExpr,
-) : HirExpr() {
+) : HirNode() {
 
     override fun <P, R> accept(visitor: HirVisitor<P, R>, p: P): R =
         visitor.visitUnionMember(this, p)

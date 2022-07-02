@@ -29,6 +29,11 @@ interface HirVisitor<P, R> {
     // SECTION: Statement
     // ==================
 
+    fun visitExprStmt(exprStmt: HirExprStmt, p: P): R {
+        visit(exprStmt.expr, p)
+        return default
+    }
+
     fun visitVarDecl(varDecl: HirVarDecl, p: P): R {
         visit(varDecl.type, p)
         visit(varDecl.init, p)

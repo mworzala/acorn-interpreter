@@ -2,6 +2,11 @@ package org.acornlang.hir
 
 abstract class HirStmt : HirNode()
 
+class HirExprStmt(val expr: HirExpr) : HirStmt() {
+
+    override fun <P, R> accept(visitor: HirVisitor<P, R>, p: P): R =
+        visitor.visitExprStmt(this, p)
+}
 
 class HirVarDecl(
     val name: String,
