@@ -5,14 +5,16 @@ Acorn
 - `lexer`: Standalone lexer for Acorn
 - `syntax`: Standalone syntax tree implementation with language specific syntax elements
 - - Depends `lexer`
-- `ast`: (todo) Abstract syntax tree on top of the syntax tree built by the parser
+- `ast`: Abstract syntax tree on top of the syntax tree built by the parser
   - Depends `syntax`
-- `hir`: (todo) High level intermediate representation, no longer maintains a full source code representation.
+- `hir`: High level intermediate representation, no longer maintains a full source code representation.
   - Depends `ast`
+- `vm`: Virtual machine which executes HIR directly.
+  - Depends `hir`
 - `interpreter`: (todo) Tree walking interpreter based on HIR
   - Depends `hir`
-- `cli`: (todo) Command line interface for the interpreter.
-  - Depends `interpreter`
+- `cli`: (todo) General purpose command line interface.
+  - Depends `vm` for launching vm
   - Probably depends on parse, ast, hir, etc for pretty error rendering? Or maybe common has an interface for error rendering and this implements that.
 
 Tooling

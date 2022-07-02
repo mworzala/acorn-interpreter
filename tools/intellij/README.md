@@ -354,7 +354,7 @@ The best way to do this is to provide release notes.
 
 The changelog is a curated list that contains information about any new features, fixes, and deprecations.
 When they are provided, these lists are available in a few different places:
-- the [CHANGELOG.md](./CHANGELOG.md) file,
+- the [CHANGELOG.md](CHANGELOG.md) file,
 - the [Releases page][gh:releases],
 - the *What's new* section of JetBrains Marketplace Plugin page,
 - and inside the Plugin Manager's item details.
@@ -362,7 +362,7 @@ When they are provided, these lists are available in a few different places:
 There are many methods for handling the project's changelog.
 The one used in the current template project is the [Keep a Changelog][keep-a-changelog] approach.
 
-The [Gradle Changelog Plugin][gh:gradle-changelog-plugin] takes care of propagating information provided within the [CHANGELOG.md](./CHANGELOG.md) to the [Gradle IntelliJ Plugin][gh:gradle-intellij-plugin].
+The [Gradle Changelog Plugin][gh:gradle-changelog-plugin] takes care of propagating information provided within the [CHANGELOG.md](CHANGELOG.md) to the [Gradle IntelliJ Plugin][gh:gradle-intellij-plugin].
 You only have to take care of writing down the actual changes in proper sections of the `[Unreleased]` section.
 
 You start with an almost empty changelog:
@@ -486,9 +486,9 @@ That approach gives more possibilities for testing and debugging pre-releases, f
 
 [file:use-this-template.png]: .github/readme/use-this-template.png
 [file:draft-release.png]: .github/readme/draft-release.png
-[file:gradle.properties]: ./gradle.properties
+[file:gradle.properties]: gradle.properties
 [file:run-logs.png]: .github/readme/run-logs.png
-[file:plugin.xml]: ./src/main/resources/META-INF/plugin.xml
+[file:plugin.xml]: src/main/resources/META-INF/plugin.xml
 [file:run-debug-configurations.png]: .github/readme/run-debug-configurations.png
 [file:settings-secrets.png]: .github/readme/settings-secrets.png
 [file:template_cleanup.yml]: ./.github/workflows/template-cleanup.yml
