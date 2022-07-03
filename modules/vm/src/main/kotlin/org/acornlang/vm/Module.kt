@@ -33,21 +33,44 @@ class Module(
     }
 
     fun getDecl(name: String): Value {
-        return declCache.getOrPut(name) {
-            val decl = hir.decls.map { it as HirConstDecl }.firstOrNull { it.name == name }
-                ?: throw IllegalArgumentException("No such decl: $name")
+        // Handle builtin types
+        return when (name) {
+            "i32" -> TypeValue(TypeType(), IntType(32)) //todo clean up
+            else -> declCache.getOrPut(name) {
+                val decl = hir.decls.map { it as HirConstDecl }.firstOrNull { it.name == name }
+                    ?: throw IllegalArgumentException("No such decl: $name")
 
-            // Eval the expression.
+                // Eval the expression.
+                val scope = ScopeImpl(rootScope)
+                val evaluator = ScopedExprEvaluator(this)
+
+                //todo const decl type is relevant here
+                try {
+                    evaluator.visit(decl.init, scope)
+                } catch (ret: ImplicitReturn) {
+                    ret.value
+                }
+
+            }
+        }
+    }
+
+    fun call(fn: FnValue, args: List<Value>): Value = when (fn) {
+        is NativeFnValue -> {
+            // Create scope with arguments
             val scope = ScopeImpl(rootScope)
-            val evaluator = ScopedExprEvaluator()
+            for ((name, value) in fn.type.paramNames.zip(args)) {
+                //todo type check the params
+                scope.define(name, value)
+            }
 
-            //todo const decl type is relevant here
             try {
-                evaluator.visit(decl.init, scope)
+                val bodyEvaluator = ScopedExprEvaluator(this)
+                bodyEvaluator.visit(fn.body, scope)
             } catch (ret: ImplicitReturn) {
                 ret.value
             }
-
         }
+        else -> TODO("Not implemented")
     }
 }

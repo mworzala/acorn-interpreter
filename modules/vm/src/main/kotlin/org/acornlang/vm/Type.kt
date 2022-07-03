@@ -83,14 +83,15 @@ class TupleType(
 
 
 class FnType(
-    val params: List<Type>,
+    val paramNames: List<String>,
+    val paramTypes: List<Type>,
     val ret: Type,
 ) : Type {
 
-    override fun toString() = "fn(${params.joinToString(", ") { it.toString() }}) $ret"
+    override fun toString() = "fn(${paramTypes.joinToString(", ") { it.toString() }}) $ret"
     override fun equals(other: Any?) =
-        this === other || (other is FnType && params == other.params && ret == other.ret)
-    override fun hashCode() = Objects.hash(params, ret)
+        this === other || (other is FnType && paramTypes == other.paramTypes && ret == other.ret)
+    override fun hashCode() = Objects.hash(paramTypes, ret)
 }
 
 
@@ -111,12 +112,14 @@ class StructType(
     val name: String,
     val memberNames: List<String>,
     val memberTypes: List<Type>,
+    val typeDecls: Map<String, Value>,
     //todo inner container items
     override val isMut: Boolean = false,
 ) : Type {
-    fun withName(name: String) = StructType(name, memberNames, memberTypes, isMut)
-    override fun asMut() = StructType(name, memberNames, memberTypes, true)
+    fun withName(name: String) = StructType(name, memberNames, memberTypes, typeDecls, isMut)
+    override fun asMut() = StructType(name, memberNames, memberTypes, typeDecls, true)
 
+    //todo equality should be based on the name and where it was created i think, rather than comparing every individual field.
     override fun toString() = "struct $name { ${memberNames.mapIndexed { i, name -> "${name}: ${memberTypes[i]}" }.joinToString(", ")} }"
     override fun equals(other: Any?) = this === other ||
             (other is StructType && name == other.name && memberNames == other.memberTypes && memberTypes == other.memberTypes)
@@ -130,8 +133,8 @@ class UnionType(
     //todo inner container items
     override val isMut: Boolean = false,
 ) : Type {
-    fun withName(name: String) = StructType(name, memberNames, memberTypes, isMut)
-    override fun asMut() = StructType(name, memberNames, memberTypes, true)
+    fun withName(name: String) = UnionType(name, memberNames, memberTypes, isMut)
+    override fun asMut() = UnionType(name, memberNames, memberTypes, true)
 
     override fun toString() = "union $name { ${memberNames.mapIndexed { i, name -> "${name}: ${memberTypes[i]}" }.joinToString(", ")} }"
     override fun equals(other: Any?) = this === other ||

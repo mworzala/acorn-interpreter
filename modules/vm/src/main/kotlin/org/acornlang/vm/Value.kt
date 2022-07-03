@@ -302,7 +302,16 @@ class TypeValue(
     val value: Type,
 ) : ContainerValue {
     override fun get(member: String): Value {
-        TODO("implementation is different based on type. eg struct searches container items, enum searches container items AND cases, etc")
+        return if (value is EnumType) {
+            val caseIndex = value.cases.indexOf(member)
+            if (caseIndex == -1)
+                throw IllegalArgumentException("No such case '$member' in $value")
+            EnumValue(value, caseIndex)
+        } else if (value is StructType) {
+            return value.typeDecls[member] ?: throw IllegalArgumentException("No such field '$member' in $value")
+        } else {
+            TODO("implementation is different based on type. eg struct searches container items, enum searches container items AND cases, etc")
+        }
     }
     override fun set(member: String, value: Value) = throw IllegalStateException("Types are immutable")
 
