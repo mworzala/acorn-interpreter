@@ -30,8 +30,7 @@ interface HirVisitor<P, R> {
     // ==================
 
     fun visitExprStmt(exprStmt: HirExprStmt, p: P): R {
-        visit(exprStmt.expr, p)
-        return default
+        return visit(exprStmt.expr, p)
     }
 
     fun visitVarDecl(varDecl: HirVarDecl, p: P): R {

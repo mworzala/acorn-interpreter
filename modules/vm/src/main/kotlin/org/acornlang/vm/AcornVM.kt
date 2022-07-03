@@ -1,9 +1,24 @@
 package org.acornlang.vm
 
-
-// Value does not seem to need a context param? Can pass it in the few places its needed
-// Invoking a function will be handled by the VM, not the Value class.
+import java.nio.file.Files
+import java.nio.file.Path
 
 class AcornVM {
+    val workDir: Path = Path.of(".")
+    val modules = mutableMapOf<Path, Module>()
+
+    fun loadModule(path: String, relativeTo: Module? = null): Module {
+        val startPath = relativeTo?.path ?: workDir
+        val modulePath = startPath.resolve(path).toAbsolutePath()
+        if (modules.containsKey(modulePath))
+            return modules[modulePath]!!
+
+        val moduleSrc = Files.readString(modulePath)
+        val module = Module(modulePath.fileName.toString(), modulePath.parent, moduleSrc)
+        modules[modulePath] = module
+        return module
+    }
+
+
 
 }

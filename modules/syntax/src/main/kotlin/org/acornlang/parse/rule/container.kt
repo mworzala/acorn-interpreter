@@ -19,7 +19,10 @@ internal fun Parser.containerItem(extended: Boolean): CompletedMarker? {
         at(TokenType.STRUCT) -> namedStructDecl(m, extended)
         at(TokenType.UNION) -> namedUnionDecl(m, extended)
         at(TokenType.SPEC) -> namedSpecDecl(m, extended)
-        else -> TODO()
+        else -> {
+            error()
+            return null
+        }
     }
 }
 
@@ -133,6 +136,7 @@ internal fun Parser.enumDecl(extended: Boolean): CompletedMarker {
 }
 
 private fun Parser.enumBody(extended: Boolean) {
+    pushRecoveryToken(TokenType.RBRACE)
     expect(TokenType.LBRACE)
 
     // Parse case list
@@ -148,6 +152,7 @@ private fun Parser.enumBody(extended: Boolean) {
     }
 
     expect(TokenType.RBRACE)
+    popRecoveryToken(TokenType.RBRACE)
 }
 
 private fun Parser.enumCase(extended: Boolean): CompletedMarker {

@@ -4,12 +4,19 @@ import org.acornlang.hir.HirBlock
 import java.lang.invoke.MethodHandle
 import java.util.*
 
-//todo could add a type parameter for the type of the type, then some casts would not be necessary here, but i dont think its worth the added typing bloat
 sealed interface Value {
-    companion object
+    companion object {
+        val empty: Value get() = TupleValue(TupleType(emptyList()), mutableListOf())
+    }
 
     val type: Type
     val isMut: Boolean get() = type.isMut
+    fun assign(newValue: Value) {
+        if (!isMut)
+            throw IllegalStateException("cannot mutate immutable value")
+        if (javaClass != newValue.javaClass)
+            throw IllegalArgumentException("cannot mutate a ${javaClass.simpleName} with a ${newValue.javaClass.simpleName}")
+    }
 
     /** Shallow copy to change the type of the value. */
     fun withType(type: Type): Value
@@ -22,6 +29,11 @@ class IntValue(
     override val type: IntType,
     var value: Long,
 ) : Value {
+    override fun assign(newValue: Value) {
+        super.assign(newValue)
+        value = (newValue as IntValue).value
+    }
+
     override fun withType(type: Type) = IntValue(type as IntType, value)
     override fun clone(deep: Boolean) = IntValue(type, value)
 
@@ -34,6 +46,11 @@ class BoolValue(
     override val type: BoolType,
     var value: Boolean,
 ) : Value {
+    override fun assign(newValue: Value) {
+        super.assign(newValue)
+        value = (newValue as BoolValue).value
+    }
+
     override fun withType(type: Type) = BoolValue(type as BoolType, value)
     override fun clone(deep: Boolean) = BoolValue(type, value)
 
@@ -46,6 +63,11 @@ class StrValue(
     override val type: StrType,
     var value: String,
 ) : Value {
+    override fun assign(newValue: Value) {
+        super.assign(newValue)
+        value = (newValue as StrValue).value
+    }
+
     override fun withType(type: Type) = StrValue(type as StrType, value)
     override fun clone(deep: Boolean) = StrValue(type, value)
 
@@ -58,6 +80,11 @@ class RefValue(
     override val type: RefType,
     var value: Value,
 ) : Value {
+    override fun assign(newValue: Value) {
+        super.assign(newValue)
+        value = (newValue as RefValue).value
+    }
+
     override fun withType(type: Type) = RefValue(type as RefType, value)
     override fun clone(deep: Boolean) = RefValue(type, if (deep) value.clone(true) else value)
 
@@ -91,6 +118,11 @@ class ArrayValue(
         items[index] = value
     }
 
+    override fun assign(newValue: Value) {
+        super.assign(newValue)
+        TODO("Array mutation")
+    }
+
     override fun withType(type: Type) = ArrayValue(type as ArrayType, items)
     // Arrays value semantics are pass by reference. It mimics array-as-pointer behavior.
     override fun clone(deep: Boolean) = ArrayValue(type, if (deep) items.map { it.clone() }.toMutableList() else items)
@@ -115,6 +147,11 @@ class SliceValue(
         if (index < 0 || index >= length)
             throw IndexOutOfBoundsException("index: ${index}, length: $length")
         array.items[start + index] = value
+    }
+
+    override fun assign(newValue: Value) {
+        super.assign(newValue)
+        TODO("Slice mutation")
     }
 
     override fun withType(type: Type) = SliceValue(type as ArrayType, array, start, length)
@@ -144,6 +181,11 @@ class TupleValue(
         items[index] = value
     }
 
+    override fun assign(newValue: Value) {
+        super.assign(newValue)
+        TODO("Not implemented")
+    }
+
     override fun withType(type: Type) = TupleValue(type as TupleType, items)
     override fun clone(deep: Boolean) = TupleValue(type, if (deep) items.map { it.clone() }.toMutableList() else items)
 
@@ -158,6 +200,9 @@ class TupleValue(
 abstract class FnValue(
     override val type: FnType,
 ) : Value {
+
+    override fun assign(newValue: Value) =
+        throw UnsupportedOperationException("Cannot mutate a function")
 
     override fun toString() = type.toString()
 }
@@ -202,6 +247,11 @@ class EnumValue(
     var value: Int,
 ) : Value {
 
+    override fun assign(newValue: Value) {
+        super.assign(newValue)
+        TODO("Not implemented")
+    }
+
     override fun withType(type: Type) = EnumValue(type as EnumType, value)
     override fun clone(deep: Boolean) = EnumValue(type, value)
 
@@ -227,6 +277,11 @@ class StructValue(
         values[index] = value
     }
 
+    override fun assign(newValue: Value) {
+        super.assign(newValue)
+        TODO("Not implemented")
+    }
+
     override fun withType(type: Type) = StructValue(type as StructType, values)
     override fun clone(deep: Boolean) = StructValue(type, values.map { it.clone(deep) }.toMutableList())
 
@@ -250,6 +305,11 @@ class TypeValue(
         TODO("implementation is different based on type. eg struct searches container items, enum searches container items AND cases, etc")
     }
     override fun set(member: String, value: Value) = throw IllegalStateException("Types are immutable")
+
+    override fun assign(newValue: Value) {
+        super.assign(newValue)
+        TODO("Not implemented")
+    }
 
     override fun withType(type: Type) = TypeValue(type as TypeType, value)
     override fun clone(deep: Boolean) = this

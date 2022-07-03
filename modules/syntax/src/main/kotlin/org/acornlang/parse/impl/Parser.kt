@@ -5,6 +5,7 @@ import org.acornlang.common.text.Span
 import org.acornlang.lex.Lexer
 import org.acornlang.lex.Token
 import org.acornlang.lex.TokenType
+import java.util.*
 
 // Convenience definitions
 internal typealias Marker = Parser.Marker
@@ -14,15 +15,15 @@ internal class Parser(
     input: String,
     val lexer: Lexer = Lexer(input),
 ) {
-    companion object {
-        private val RECOVERY_SET = listOf(TokenType.LET, TokenType.EQ)
-    }
 
     val expectedKinds = mutableSetOf<TokenType>()
     val events = mutableListOf<ParseEvent>()
 
+    private val recoverySet = Stack<TokenType>()
+
     init {
         lexer.reset()
+        recoverySet.push(TokenType.SEMICOLON)
     }
 
     // SECTION: Parsing utilities
@@ -90,10 +91,21 @@ internal class Parser(
         events.add(ParseEvent.Error(parseError))
         expectedKinds.clear()
 
-        if (!atSet(RECOVERY_SET) && !atEnd()) {
+        if (!atSet(recoverySet) && !atEnd()) {
             val m = start()
             bump()
             m.complete(SyntaxKind.ERROR)
+        }
+    }
+
+    fun pushRecoveryToken(type: TokenType) {
+        recoverySet.push(type)
+    }
+
+    fun popRecoveryToken(type: TokenType) {
+        val popped = recoverySet.pop()
+        if (popped != type) {
+            throw RuntimeException("Mismatched recovery set manipulation")
         }
     }
 

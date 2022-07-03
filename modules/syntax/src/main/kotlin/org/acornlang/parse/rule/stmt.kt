@@ -16,6 +16,7 @@ internal fun Parser.stmt(extended: Boolean): CompletedMarker? = when {
 
 private fun Parser.varDecl(extended: Boolean): CompletedMarker {
     val m = start()
+    pushRecoveryToken(TokenType.EQ)
 
     expect(TokenType.LET)
 
@@ -32,6 +33,7 @@ private fun Parser.varDecl(extended: Boolean): CompletedMarker {
     if (match(TokenType.EQ))
         expr(extended)
 
+    popRecoveryToken(TokenType.EQ)
     return m.complete(SyntaxKind.VAR_DECL)
 }
 
