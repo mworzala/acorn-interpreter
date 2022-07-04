@@ -36,6 +36,7 @@ class Module(
         // Handle builtin types
         return when (name) {
             "i32" -> TypeValue(TypeType(), IntType(32)) //todo clean up
+            "type" -> TypeValue(TypeType(), TypeType())
             else -> declCache.getOrPut(name) {
                 val decl = hir.decls.map { it as HirConstDecl }.firstOrNull { it.name == name }
                     ?: throw IllegalArgumentException("No such decl: $name")

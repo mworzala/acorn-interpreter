@@ -1,9 +1,8 @@
-package org.acornlang.vm.evaluator
+package org.acornlang.vm.unit
 
 import org.acornlang.vm.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 
 class TestStructEval {
 

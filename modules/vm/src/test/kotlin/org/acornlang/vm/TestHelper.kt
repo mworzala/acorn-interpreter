@@ -14,6 +14,12 @@ fun evalExpr(@Language("acorn", prefix = "const a = ", suffix = ";") source: Str
     return module.getDecl("a")
 }
 
+fun evalModuleMain(@Language("acorn") source: String): Value {
+    val module = createModuleWithSource(source)
+    val main = module.getDecl("main").assert<NativeFnValue>()
+    return module.call(main, listOf())
+}
+
 inline fun <reified T : Value?> Value?.assert(): T {
     assertNotNull(this)
     assertEquals(T::class.java, this!!.javaClass)
