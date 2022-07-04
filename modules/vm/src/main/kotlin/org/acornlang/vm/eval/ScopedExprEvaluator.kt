@@ -9,6 +9,15 @@ class ScopedExprEvaluator(val module: Module) : HirVisitor<Scope, Value> {
     override val default: Value
         get() = throw UnsupportedOperationException()
 
+    private inline fun <reified V : Value, reified T : Type> visitExpectType(node: HirNode, p: Scope): Pair<V, T> {
+        val value = visit(node, p)
+        if (value !is V)
+            throw RuntimeException("Expected ${T::class.simpleName} but got ${value::class.simpleName}")
+        if (value.type !is T)
+            throw RuntimeException("Expected type ${T::class.simpleName} but got ${value.type::class.simpleName}")
+        return Pair(value, value.type as T)
+    }
+
 
     // Expressions
 
@@ -22,6 +31,83 @@ class ScopedExprEvaluator(val module: Module) : HirVisitor<Scope, Value> {
         StrValue(StrType(), stringLiteral.value)
     override fun visitVarRef(varRef: HirVarRef, p: Scope): Value =
         p.get(varRef.name) ?: throw RuntimeException("Undefined variable ${varRef.name}")
+
+    private fun visitArithmetic(binary: HirBinary, p: Scope): Value {
+        val (lhs, lhsType) = visitExpectType<IntValue, IntType>(binary.lhs, p)
+        val (rhs, rhsType) = visitExpectType<IntValue, IntType>(binary.rhs, p)
+        val targetBits = maxOf(lhsType.bits, rhsType.bits) // Use bigger type between the two
+
+        val intValue = when (binary.operator) {
+            HirBinary.Operator.ADD -> lhs.value + rhs.value
+            HirBinary.Operator.SUB -> lhs.value - rhs.value
+            HirBinary.Operator.MUL -> lhs.value * rhs.value
+            HirBinary.Operator.DIV -> lhs.value / rhs.value
+            else -> throw RuntimeException("Unreachable")
+        }
+
+        return IntValue(IntType(targetBits), intValue)
+    }
+    private fun visitValueComparison(binary: HirBinary, p: Scope): Value {
+        val lhs = visit(binary.lhs, p)
+        val rhs = visit(binary.rhs, p)
+
+        val resultValue = when (binary.operator) {
+            HirBinary.Operator.EQ -> lhs == rhs
+            HirBinary.Operator.NE -> lhs != rhs
+            else -> throw RuntimeException("Unreachable")
+        }
+
+        return BoolValue(BoolType(), resultValue)
+    }
+    private fun visitNumberComparison(binary: HirBinary, p: Scope): Value {
+        val (lhs, _) = visitExpectType<IntValue, IntType>(binary.lhs, p)
+        val (rhs, _) = visitExpectType<IntValue, IntType>(binary.rhs, p)
+
+        val boolValue = when (binary.operator) {
+            HirBinary.Operator.GT -> lhs.value > rhs.value
+            HirBinary.Operator.GE -> lhs.value >= rhs.value
+            HirBinary.Operator.LT -> lhs.value < rhs.value
+            HirBinary.Operator.LE -> lhs.value <= rhs.value
+            else -> throw RuntimeException("Unreachable")
+        }
+
+        return BoolValue(BoolType(), boolValue)
+    }
+    private fun visitLogical(binary: HirBinary, p: Scope): Value {
+        val (lhs, _) = visitExpectType<BoolValue, BoolType>(binary.lhs, p)
+        val (rhs, _) = visitExpectType<BoolValue, BoolType>(binary.rhs, p)
+
+        val boolValue = when (binary.operator) {
+            HirBinary.Operator.AND -> lhs.value && rhs.value
+            HirBinary.Operator.OR -> lhs.value || rhs.value
+            else -> throw RuntimeException("Unreachable")
+        }
+
+        return BoolValue(BoolType(), boolValue)
+    }
+    override fun visitBinary(binary: HirBinary, p: Scope): Value {
+        return when (binary.operator) {
+            HirBinary.Operator.ADD, HirBinary.Operator.SUB,
+            HirBinary.Operator.MUL, HirBinary.Operator.DIV -> visitArithmetic(binary, p)
+            HirBinary.Operator.EQ, HirBinary.Operator.NE -> visitValueComparison(binary, p)
+            HirBinary.Operator.LT, HirBinary.Operator.LE,
+            HirBinary.Operator.GT, HirBinary.Operator.GE -> visitNumberComparison(binary, p)
+            HirBinary.Operator.AND, HirBinary.Operator.OR -> visitLogical(binary, p)
+        }
+    }
+    override fun visitUnary(unary: HirUnary, p: Scope): Value {
+        return when (unary.operator) {
+            HirUnary.Operator.NEG -> {
+                val (value, valueType) = visitExpectType<IntValue, IntType>(unary.operand, p)
+                IntValue(IntType(valueType.bits), -value.value) //todo does bad things for unsigned
+            }
+            HirUnary.Operator.NOT -> {
+                val (value, _) = visitExpectType<BoolValue, BoolType>(unary.operand, p)
+                BoolValue(BoolType(), !value.value)
+            }
+            else -> throw RuntimeException("Unreachable")
+        }
+    }
 
     override fun visitAssign(assign: HirAssign, p: Scope): Value {
         val target = visit(assign.target, p)

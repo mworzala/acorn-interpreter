@@ -37,6 +37,22 @@ class TestVariableEval {
     }
 
     @Test
+    fun `mutable value double set`() {
+        val source = """
+            {
+                let mut x = 1;
+                x = 2;
+                x = 5;
+                x
+            }
+        """.trimIndent()
+
+        val rawValue = evalExpr(source)
+        val value = rawValue.assert<IntValue>()
+        assertEquals(5, value.value)
+    }
+
+    @Test
     fun `mutable immutable value`() {
         val source = """
             {
