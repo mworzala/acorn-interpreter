@@ -14,6 +14,10 @@
 
     psiImplUtilClass="org.acornlang.language.psi.AcornPsiImplUtil"
 
+    extends("ConstDecl|NamedFnDecl|NamedEnumDecl|NamedStructDecl|NamedUnionDecl|NamedSpecDecl") = ContainerItem
+
+    extends(".+Stmt") = Stmt
+
     extends(".+Expr|Block") = Expr
     elementType(".+BinExpr") = BinaryExpr
     elementType(".+BinOp") = BinaryOp
@@ -46,7 +50,9 @@
         DOT="."
         AT="@"
 
+        BREAK="break"
         CONST="const"
+        CONTINUE="continue"
         ELSE="else"
         ENUM="enum"
         FALSE="false"
@@ -62,7 +68,7 @@
         UNION="union"
         WHILE="while"
 
-        // Is there a way to represent the regex for these here?
+        INTRINSIC_IDENT="regexp:[a-zA-Z_][a-zA-Z0-9_]*!"
         IDENT="regexp:[a-zA-Z_][a-zA-Z0-9_]*"
         NUMBER="regexp:[0-9]+"
         STRING="regexp:\"[^[\"\n]]*\""
@@ -142,16 +148,39 @@ private SpecBody ::= LBRACE NamedFnDecl* RBRACE
 // SECTION: Statements
 // ===================
 
+Stmt ::= ReturnStmt
+       | BreakStmt
+       | ContinueStmt
+
+       | VarDeclStmt
+       | ExtendedExpr
+       { recoverWhile=Stmt_recover }
+//todo this is _fine_, but a much better recovery would include all the starting symbols for stmts and exprs. This version does not handle a missing semicolon well
+private Stmt_recover ::= !(SEMI | RBRACE)
+
+ReturnStmt ::= RETURN Expr? { pin=1 }
+BreakStmt ::= BREAK
+ContinueStmt ::= CONTINUE
+
+VarDeclStmt ::= LET MUT? IDENT (COLON LimitedExpr)? (EQ Expr)? { pin=1 }
+
+
 // SECTION: Expressions
 // ====================
 
+// todo need to look into precedence here.
 Expr ::= WhileExpr
        | IfExpr
        | Block
 
-//       | AssignBinExpr
+       | SelectExpr
+//       | AssignBinExpr //todo this one needs to only be allowed in extended.
+
+       | LogBinExpr
+       | CmpBinExpr
+       | MulBinExpr
        | AddBinExpr
-       // ...
+
        | PrimaryExpr
 
 // todo implement state swap
@@ -160,7 +189,7 @@ private LimitedExpr ::= Expr
 
 WhileExpr ::= WHILE
 IfExpr ::= IF
-Block ::= LBRACE RBRACE
+Block ::= LBRACE (Stmt (SEMI (Stmt | &RBRACE))*)? RBRACE
 
 // Binary Expressions
 
@@ -176,14 +205,46 @@ fake BinaryOp ::= '=' | '+'
 //AssignBinExpr ::= Expr AssignBinOp Expr { rightAssociative=true }
 //AssignBinOp ::= '='
 
+SelectExpr ::= Expr DOT IDENT
+
+LogBinExpr ::= Expr LogBinOp Expr
+LogBinOp ::= AMPAMP | BARBAR
+
+CmpBinExpr ::= Expr CmpBinOp Expr
+CmpBinOp ::= EQEQ | BANGEQ | LT | LTEQ | GT | GTEQ
+
+MulBinExpr ::= Expr MulBinOp Expr
+MulBinOp ::= STAR | SLASH
+
 AddBinExpr ::= Expr AddBinOp Expr
-AddBinOp ::= '+'
+AddBinOp ::= PLUS | MINUS
 
 // Primary expressions
 
-PrimaryExpr ::= LiteralExpr
+// prefix: Minus, Bang, Amp
 
-LiteralExpr ::= NUMBER | IDENT
+// parenOrTuple, array, index, call, construct
+PrimaryExpr ::= LiteralExpr
+              | VarRefExpr
+              | IntrinsicRefExpr
+
+              | ParenOrTupleExpr
+              | ArrayExpr
+              | IndexExpr
+              | ConstructExpr
+              | CallExpr
+
+LiteralExpr ::= NUMBER | STRING | TRUE | FALSE
+VarRefExpr ::= IDENT
+IntrinsicRefExpr ::= INTRINSIC_IDENT
+
+ParenOrTupleExpr ::= LPAREN ExtendedExpr (TupleExpr_upper | RPAREN) { pin=2 elementType="ParenExpr" }
+upper TupleExpr_upper ::= COMMA (ExtendedExpr (COMMA (ExtendedExpr | &RPAREN))*)? RPAREN { pin=1 elementType="TupleExpr" }
+
+ArrayExpr ::= LBRACKET (ExtendedExpr (COMMA (ExtendedExpr | &RBRACKET))*)? RBRACKET
+
+
+
 
 //Expr ::= //WhileExpr
 ////       | IfExpr
