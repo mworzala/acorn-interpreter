@@ -168,20 +168,20 @@ VarDeclStmt ::= LET MUT? IDENT (COLON LimitedExpr)? (EQ Expr)? { pin=1 }
 // SECTION: Expressions
 // ====================
 
-// todo need to look into precedence here.
 Expr ::= WhileExpr
        | IfExpr
        | Block
 
-       | SelectExpr
-//       | AssignBinExpr //todo this one needs to only be allowed in extended.
-
+       | AssignBinExpr
+       | TypeUnionExpr
        | LogBinExpr
        | CmpBinExpr
        | MulBinExpr
        | AddBinExpr
+       | SelectExpr
 
        | PrimaryExpr
+//todo recovery
 
 // todo implement state swap
 private ExtendedExpr ::= Expr
@@ -199,13 +199,16 @@ fake BinaryExpr ::= Expr BinaryOp Expr {
         rhs="/Expr[1]"
     ]
 }
-fake BinaryOp ::= '=' | '+'
+fake BinaryOp ::= EQ | AMP | DOT
+                | AMPAMP | BARBAR
+                | EQEQ | BANGEQ | LT | LTEQ | GT | GTEQ
+                | STAR | SLASH | PLUS | MINUS
 
 //todo assign is extended only, otherwise something like `const a: a = 5;` would parse as `a = 5` as the type.
-//AssignBinExpr ::= Expr AssignBinOp Expr { rightAssociative=true }
-//AssignBinOp ::= '='
+AssignBinExpr ::= Expr EQ Expr
 
-SelectExpr ::= Expr DOT IDENT
+TypeUnionExpr ::= Expr AMP Expr
+
 
 LogBinExpr ::= Expr LogBinOp Expr
 LogBinOp ::= AMPAMP | BARBAR
@@ -219,12 +222,14 @@ MulBinOp ::= STAR | SLASH
 AddBinExpr ::= Expr AddBinOp Expr
 AddBinOp ::= PLUS | MINUS
 
+SelectExpr ::= Expr DOT IDENT
+
 // Primary expressions
 
 // prefix: Minus, Bang, Amp
 
-// parenOrTuple, array, index, call, construct
-PrimaryExpr ::= LiteralExpr
+// index, call, construct
+private PrimaryExpr ::= LiteralExpr
               | VarRefExpr
               | IntrinsicRefExpr
 
@@ -241,47 +246,14 @@ IntrinsicRefExpr ::= INTRINSIC_IDENT
 ParenOrTupleExpr ::= LPAREN ExtendedExpr (TupleExpr_upper | RPAREN) { pin=2 elementType="ParenExpr" }
 upper TupleExpr_upper ::= COMMA (ExtendedExpr (COMMA (ExtendedExpr | &RPAREN))*)? RPAREN { pin=1 elementType="TupleExpr" }
 
-ArrayExpr ::= LBRACKET (ExtendedExpr (COMMA (ExtendedExpr | &RBRACKET))*)? RBRACKET
+ArrayExpr ::= LBRACKET (ExtendedExpr (COMMA (ExtendedExpr | &RBRACKET))*)? RBRACKET { pin=1 }
 
+IndexExpr ::= Expr LBRACKET Expr RBRACKET { pin=2 }
 
+//todo only in some cases
+ConstructExpr ::= Expr LBRACE ConstructArgList RBRACE { pin=2 }
+private ConstructArgList ::= (ConstructArg (COMMA (ConstructArg | &RBRACE))*)? { pin(".*")=1 }
+ConstructArg ::= IDENT COLON ExtendedExpr { pin=1 }
 
-
-//Expr ::= //WhileExpr
-////       | IfExpr
-////       | BlockExpr
-////
-//
-//       CompBinExpr
-//       | AddSubBinExpr
-//       | NUMBER
-//
-//ExtendedExpr ::= <<exprMode 'ExtendedMode.ON' Expr>> {
-//    elementType = Expr
-//    name = "expr"
-//}
-//
-//RestrictedExpr ::= <<exprMode 'ExtendedMode.OFF' Expr>> {
-//    elementType = Expr
-//    name = "expr"
-//}
-//
-//
-//// Binary expresions
-//
-//fake BinaryExpr ::= Expr BinaryOp Expr {
-//    methods=[
-//        lhs="/Expr[0]"
-//        rhs="/Expr[1]"
-//    ]
-//}
-//
-//fake BinaryOp ::= '||' | '&&'
-//                | '==' | '!='
-//                | '<' | '<=' | '>' | '>='
-//                | '+' | '-' | '*' | '/'
-//
-//CompBinExpr ::= BinaryExpr CompBinOp BinaryExpr
-//CompBinOp ::= '==' | '!=' | '<' | '<=' | '>' | '>='
-//
-//AddSubBinExpr ::= BinaryExpr AddSubBinOp BinaryExpr
-//AddSubBinOp ::= '+' | '-'
+CallExpr ::= Expr LPAREN CallArgList RPAREN { pin=2 }
+private CallArgList ::= (ExtendedExpr (COMMA (ExtendedExpr | &RBRACE))*)? { pin(".*")=1 }
