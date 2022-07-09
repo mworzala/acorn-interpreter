@@ -1,0 +1,226 @@
+{
+    parserClass="org.acornlang.language.parser.AcornParser"
+
+    extends="com.intellij.extapi.psi.ASTWrapperPsiElement"
+
+    psiClassPrefix="Acorn"
+    psiImplClassSuffix="Impl"
+    psiPackage="org.acornlang.language.psi"
+    psiImplPackage="org.acornlang.language.psi.impl"
+
+    elementTypeHolderClass="org.acornlang.language.psi.AcornTypes"
+    elementTypeClass="org.acornlang.language.psi.AcornElementType"
+    tokenTypeClass="org.acornlang.language.psi.AcornTokenType"
+
+    psiImplUtilClass="org.acornlang.language.psi.AcornPsiImplUtil"
+
+    extends(".+Expr|Block") = Expr
+    elementType(".+BinExpr") = BinaryExpr
+    elementType(".+BinOp") = BinaryOp
+
+    tokens=[
+        LPAREN="("
+        RPAREN=")"
+        LBRACE="{"
+        RBRACE="}"
+        LBRACKET="["
+        RBRACKET="]"
+        MINUS="-"
+        PLUS="+"
+        STAR="*"
+        SLASH="/"
+        EQ="="
+        EQEQ="=="
+        BANG="!"
+        BANGEQ="!="
+        LT="<"
+        LTEQ="<="
+        GT=">"
+        GTEQ=">="
+        AMP="&"
+        AMPAMP="&&"
+        BARBAR="||"
+        SEMI=";"
+        COLON=":"
+        COMMA=","
+        DOT="."
+        AT="@"
+
+        CONST="const"
+        ELSE="else"
+        ENUM="enum"
+        FALSE="false"
+        FN="fn"
+        FOREIGN="foreign"
+        IF="if"
+        LET="let"
+        MUT="mut"
+        RETURN="return"
+        SPEC="spec"
+        STRUCT="struct"
+        TRUE="true"
+        UNION="union"
+        WHILE="while"
+
+        // Is there a way to represent the regex for these here?
+        IDENT="regexp:[a-zA-Z_][a-zA-Z0-9_]*"
+        NUMBER="regexp:[0-9]+"
+        STRING="regexp:\"[^[\"\n]]*\""
+
+        WHITE_SPACE="regexp:[\s\t\n]+"
+        DOC_COMMENT="regexp:///[^\n]*\n"
+        LINE_COMMENT="regexp://[^\n]*\n"
+    ]
+}
+
+//todo comments and doc comments
+
+File ::= ContainerItem* <<eof>>;
+
+
+// SECTION: Container Items
+// ========================
+
+// todo ContainerItem should have an extends rule i guess
+ContainerItem ::= ConstDecl
+                | NamedFnDecl
+                | NamedEnumDecl
+                | NamedStructDecl
+                | NamedUnionDecl
+                | NamedSpecDecl { recoverWhile=ContainerItem_recover }
+private ContainerItem_recover ::= !(CONST | FN | ENUM | STRUCT | UNION | SPEC)
+
+ConstDecl ::= CONST IDENT (COLON LimitedExpr)? EQ Expr SEMI { pin=1 }
+
+// Function
+
+NamedFnDecl ::= FN IDENT FnProto (Block | SEMI) { pin=1 }
+
+private FnProto ::= FnParamList LimitedExpr
+
+//todo FnParamList could be private i think
+// does FnParamList need to pin/recover?
+FnParamList ::= LPAREN (FnParam (COMMA (FnParam | &RPAREN))*)? RPAREN { pin(".*")=1 }
+FnParam ::= IDENT (COLON LimitedExpr)? { pin=1 recoverWhile=FnParam_recover }
+private FnParam_recover ::= !(COMMA | RPAREN)
+
+// Enum
+
+NamedEnumDecl ::= ENUM IDENT EnumBody { pin=1 }
+
+private EnumBody ::= LBRACE EnumCaseList? RBRACE
+EnumCaseList ::= EnumCase (COMMA (EnumCase | &RBRACE))*
+EnumCase ::= IDENT
+
+// Struct
+
+NamedStructDecl ::= STRUCT IDENT StructBody { pin=1 }
+
+private StructBody ::= LBRACE StructFieldList? RBRACE
+StructFieldList ::= StructField (COMMA (StructField | &RBRACE))*
+
+StructField ::= IDENT COLON LimitedExpr { pin=1 recoverWhile=StructField_recover }
+private StructField_recover ::= !(COMMA | RBRACE) //todo this recovery rule needs to consider that the thing after might be a container item, eg include const/struct/enum/etc here.
+
+// Union
+
+NamedUnionDecl ::= UNION IDENT UnionBody { pin=1 }
+
+private UnionBody ::= LBRACE UnionFieldList? RBRACE
+UnionFieldList ::= UnionField (COMMA (UnionField | &RBRACE))*
+
+UnionField ::= IDENT COLON LimitedExpr { pin=1 recoverWhile=UnionField_recover }
+private UnionField_recover ::= !(COMMA | RBRACE)
+
+// Spec
+
+NamedSpecDecl ::= SPEC IDENT SpecBody { pin=1 }
+
+private SpecBody ::= LBRACE NamedFnDecl* RBRACE
+
+
+// SECTION: Statements
+// ===================
+
+// SECTION: Expressions
+// ====================
+
+Expr ::= WhileExpr
+       | IfExpr
+       | Block
+
+//       | AssignBinExpr
+       | AddBinExpr
+       // ...
+       | PrimaryExpr
+
+// todo implement state swap
+private ExtendedExpr ::= Expr
+private LimitedExpr ::= Expr
+
+WhileExpr ::= WHILE
+IfExpr ::= IF
+Block ::= LBRACE RBRACE
+
+// Binary Expressions
+
+fake BinaryExpr ::= Expr BinaryOp Expr {
+    methods=[
+        lhs="/Expr[0]"
+        rhs="/Expr[1]"
+    ]
+}
+fake BinaryOp ::= '=' | '+'
+
+//todo assign is extended only, otherwise something like `const a: a = 5;` would parse as `a = 5` as the type.
+//AssignBinExpr ::= Expr AssignBinOp Expr { rightAssociative=true }
+//AssignBinOp ::= '='
+
+AddBinExpr ::= Expr AddBinOp Expr
+AddBinOp ::= '+'
+
+// Primary expressions
+
+PrimaryExpr ::= LiteralExpr
+
+LiteralExpr ::= NUMBER | IDENT
+
+//Expr ::= //WhileExpr
+////       | IfExpr
+////       | BlockExpr
+////
+//
+//       CompBinExpr
+//       | AddSubBinExpr
+//       | NUMBER
+//
+//ExtendedExpr ::= <<exprMode 'ExtendedMode.ON' Expr>> {
+//    elementType = Expr
+//    name = "expr"
+//}
+//
+//RestrictedExpr ::= <<exprMode 'ExtendedMode.OFF' Expr>> {
+//    elementType = Expr
+//    name = "expr"
+//}
+//
+//
+//// Binary expresions
+//
+//fake BinaryExpr ::= Expr BinaryOp Expr {
+//    methods=[
+//        lhs="/Expr[0]"
+//        rhs="/Expr[1]"
+//    ]
+//}
+//
+//fake BinaryOp ::= '||' | '&&'
+//                | '==' | '!='
+//                | '<' | '<=' | '>' | '>='
+//                | '+' | '-' | '*' | '/'
+//
+//CompBinExpr ::= BinaryExpr CompBinOp BinaryExpr
+//CompBinOp ::= '==' | '!=' | '<' | '<=' | '>' | '>='
+//
+//AddSubBinExpr ::= BinaryExpr AddSubBinOp BinaryExpr
+//AddSubBinOp ::= '+' | '-'
