@@ -34,7 +34,7 @@ class AcornSyntaxHighlighter : SyntaxHighlighterBase() {
             AcornTypes.FALSE, AcornTypes.FN, AcornTypes.FOREIGN,
             AcornTypes.IF, AcornTypes.LET, AcornTypes.MUT,
             AcornTypes.RETURN, AcornTypes.SPEC, AcornTypes.STRUCT,
-            AcornTypes.TRUE, AcornTypes.TYPE, AcornTypes.WHILE,
+            AcornTypes.TRUE, AcornTypes.WHILE,
         )
         val OPS = listOf(
             AcornTypes.MINUS, AcornTypes.PLUS, AcornTypes.STAR,

@@ -16,6 +16,8 @@ import com.intellij.psi.TokenType;
 %eof{  return;
 %eof}
 
+BANG="!"
+
 WHITE_SPACE=[\ \n\t\f\r]
 DIGIT=[0-9]
 FIRST_IDENT_CHAR=[a-zA-Z_]
@@ -59,32 +61,34 @@ LINE_COMMENT="//"[^\n]*\n
     "@"    { return AcornTypes.AT; }
 
     // Keywords
-    "const"   { return AcornTypes.CONST; }
-    "else"    { return AcornTypes.ELSE; }
-    "enum"    { return AcornTypes.ENUM; }
-    "false"   { return AcornTypes.FALSE; }
-    "fn"      { return AcornTypes.FN; }
-    "foreign" { return AcornTypes.FOREIGN; }
-    "if"      { return AcornTypes.IF; }
-    "let"     { return AcornTypes.LET; }
-    "mut"     { return AcornTypes.MUT; }
-    "return"  { return AcornTypes.RETURN; }
-    "spec"    { return AcornTypes.SPEC; }
-    "struct"  { return AcornTypes.STRUCT; }
-    "true"    { return AcornTypes.TRUE; }
-    "type"    { return AcornTypes.TYPE; }
-    "union"   { return AcornTypes.UNION; }
-    "while"   { return AcornTypes.WHILE; }
+    "break"     { return AcornTypes.BREAK; }
+    "const"     { return AcornTypes.CONST; }
+    "continue"  { return AcornTypes.CONTINUE; }
+    "else"      { return AcornTypes.ELSE; }
+    "enum"      { return AcornTypes.ENUM; }
+    "false"     { return AcornTypes.FALSE; }
+    "fn"        { return AcornTypes.FN; }
+    "foreign"   { return AcornTypes.FOREIGN; }
+    "if"        { return AcornTypes.IF; }
+    "let"       { return AcornTypes.LET; }
+    "mut"       { return AcornTypes.MUT; }
+    "return"    { return AcornTypes.RETURN; }
+    "spec"      { return AcornTypes.SPEC; }
+    "struct"    { return AcornTypes.STRUCT; }
+    "true"      { return AcornTypes.TRUE; }
+    "union"     { return AcornTypes.UNION; }
+    "while"     { return AcornTypes.WHILE; }
 
     // Literals
-    {DIGIT}+                          { return AcornTypes.NUMBER; }
-    {FIRST_IDENT_CHAR}{IDENT_CHAR}*   { return AcornTypes.IDENT; }
-    {STRING_LITERAL}                  { return AcornTypes.STRING; }
+    {DIGIT}+                              { return AcornTypes.NUMBER; }
+    {FIRST_IDENT_CHAR}{IDENT_CHAR}*{BANG} { return AcornTypes.INTRINSIC_IDENT; }
+    {FIRST_IDENT_CHAR}{IDENT_CHAR}*       { return AcornTypes.IDENT; }
+    {STRING_LITERAL}                      { return AcornTypes.STRING; }
 
     // Special
-    {WHITE_SPACE}+                    { return TokenType.WHITE_SPACE; }
-    {DOC_COMMENT}                     { return AcornTypes.DOC_COMMENT; }
-    {LINE_COMMENT}                    { return AcornTypes.LINE_COMMENT; }
+    {WHITE_SPACE}+                        { return TokenType.WHITE_SPACE; }
+    {DOC_COMMENT}                         { return AcornTypes.DOC_COMMENT; }
+    {LINE_COMMENT}                        { return AcornTypes.LINE_COMMENT; }
 }
 
-[^]                                   { return TokenType.BAD_CHARACTER; }
+[^]                                       { return TokenType.BAD_CHARACTER; }
