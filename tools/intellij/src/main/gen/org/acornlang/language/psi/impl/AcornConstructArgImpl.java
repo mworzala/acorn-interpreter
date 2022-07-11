@@ -28,12 +28,6 @@ public class AcornConstructArgImpl extends ASTWrapperPsiElement implements Acorn
   }
 
   @Override
-  @Nullable
-  public AcornExpr getExpr() {
-    return findChildByClass(AcornExpr.class);
-  }
-
-  @Override
   @NotNull
   public PsiElement getIdent() {
     return findNotNullChildByType(IDENT);

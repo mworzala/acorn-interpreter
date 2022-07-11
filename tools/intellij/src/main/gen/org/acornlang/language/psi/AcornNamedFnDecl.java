@@ -7,8 +7,8 @@ import com.intellij.psi.PsiElement;
 
 public interface AcornNamedFnDecl extends AcornContainerItem {
 
-  @NotNull
-  List<AcornExpr> getExprList();
+  @Nullable
+  AcornBlock getBlock();
 
   @Nullable
   AcornFnParamList getFnParamList();

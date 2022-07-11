@@ -11,7 +11,7 @@ import static org.acornlang.language.psi.AcornTypes.*;
 import com.intellij.extapi.psi.ASTWrapperPsiElement;
 import org.acornlang.language.psi.*;
 
-public abstract class AcornExprImpl extends ASTWrapperPsiElement implements AcornExpr {
+public class AcornExprImpl extends ASTWrapperPsiElement implements AcornExpr {
 
   public AcornExprImpl(@NotNull ASTNode node) {
     super(node);

@@ -27,10 +27,4 @@ public class AcornStmtImpl extends ASTWrapperPsiElement implements AcornStmt {
     else super.accept(visitor);
   }
 
-  @Override
-  @Nullable
-  public AcornExpr getExpr() {
-    return findChildByClass(AcornExpr.class);
-  }
-
 }

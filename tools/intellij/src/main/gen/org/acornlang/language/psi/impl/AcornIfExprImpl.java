@@ -27,4 +27,10 @@ public class AcornIfExprImpl extends AcornExprImpl implements AcornIfExpr {
     else super.accept(visitor);
   }
 
+  @Override
+  @NotNull
+  public List<AcornExpr> getExprList() {
+    return PsiTreeUtil.getChildrenOfTypeAsList(this, AcornExpr.class);
+  }
+
 }

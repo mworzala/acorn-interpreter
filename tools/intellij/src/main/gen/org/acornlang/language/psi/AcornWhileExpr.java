@@ -7,4 +7,7 @@ import com.intellij.psi.PsiElement;
 
 public interface AcornWhileExpr extends AcornExpr {
 
+  @Nullable
+  AcornBlock getBlock();
+
 }

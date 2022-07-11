@@ -9,6 +9,7 @@ import org.acornlang.language.psi.impl.*;
 public interface AcornTypes {
 
   IElementType ARRAY_EXPR = new AcornElementType("ARRAY_EXPR");
+  IElementType ASSIGN_EXPR = new AcornElementType("ASSIGN_EXPR");
   IElementType BINARY_EXPR = new AcornElementType("BINARY_EXPR");
   IElementType BINARY_OP = new AcornElementType("BINARY_OP");
   IElementType BLOCK = new AcornElementType("BLOCK");
@@ -24,6 +25,7 @@ public interface AcornTypes {
   IElementType EXPR = new AcornElementType("EXPR");
   IElementType FN_PARAM = new AcornElementType("FN_PARAM");
   IElementType FN_PARAM_LIST = new AcornElementType("FN_PARAM_LIST");
+  IElementType HEADLESS_SELECT_EXPR = new AcornElementType("HEADLESS_SELECT_EXPR");
   IElementType IF_EXPR = new AcornElementType("IF_EXPR");
   IElementType INDEX_EXPR = new AcornElementType("INDEX_EXPR");
   IElementType INTRINSIC_REF_EXPR = new AcornElementType("INTRINSIC_REF_EXPR");
@@ -33,10 +35,14 @@ public interface AcornTypes {
   IElementType NAMED_SPEC_DECL = new AcornElementType("NAMED_SPEC_DECL");
   IElementType NAMED_STRUCT_DECL = new AcornElementType("NAMED_STRUCT_DECL");
   IElementType NAMED_UNION_DECL = new AcornElementType("NAMED_UNION_DECL");
+  IElementType NEGATE_UNARY_EXPR = new AcornElementType("NEGATE_UNARY_EXPR");
+  IElementType NOT_UNARY_EXPR = new AcornElementType("NOT_UNARY_EXPR");
   IElementType PAREN_EXPR = new AcornElementType("PAREN_EXPR");
+  IElementType REF_UNARY_EXPR = new AcornElementType("REF_UNARY_EXPR");
   IElementType RETURN_STMT = new AcornElementType("RETURN_STMT");
   IElementType SELECT_EXPR = new AcornElementType("SELECT_EXPR");
   IElementType STMT = new AcornElementType("STMT");
+  IElementType STRUCT_DECL_EXPR = new AcornElementType("STRUCT_DECL_EXPR");
   IElementType STRUCT_FIELD = new AcornElementType("STRUCT_FIELD");
   IElementType STRUCT_FIELD_LIST = new AcornElementType("STRUCT_FIELD_LIST");
   IElementType TUPLE_EXPR = new AcornElementType("TUPLE_EXPR");
@@ -103,6 +109,9 @@ public interface AcornTypes {
       if (type == ARRAY_EXPR) {
         return new AcornArrayExprImpl(node);
       }
+      else if (type == ASSIGN_EXPR) {
+        return new AcornAssignExprImpl(node);
+      }
       else if (type == BINARY_EXPR) {
         return new AcornBinaryExprImpl(node);
       }
@@ -139,11 +148,17 @@ public interface AcornTypes {
       else if (type == ENUM_CASE_LIST) {
         return new AcornEnumCaseListImpl(node);
       }
+      else if (type == EXPR) {
+        return new AcornExprImpl(node);
+      }
       else if (type == FN_PARAM) {
         return new AcornFnParamImpl(node);
       }
       else if (type == FN_PARAM_LIST) {
         return new AcornFnParamListImpl(node);
+      }
+      else if (type == HEADLESS_SELECT_EXPR) {
+        return new AcornHeadlessSelectExprImpl(node);
       }
       else if (type == IF_EXPR) {
         return new AcornIfExprImpl(node);
@@ -172,8 +187,17 @@ public interface AcornTypes {
       else if (type == NAMED_UNION_DECL) {
         return new AcornNamedUnionDeclImpl(node);
       }
+      else if (type == NEGATE_UNARY_EXPR) {
+        return new AcornNegateUnaryExprImpl(node);
+      }
+      else if (type == NOT_UNARY_EXPR) {
+        return new AcornNotUnaryExprImpl(node);
+      }
       else if (type == PAREN_EXPR) {
         return new AcornParenOrTupleExprImpl(node);
+      }
+      else if (type == REF_UNARY_EXPR) {
+        return new AcornRefUnaryExprImpl(node);
       }
       else if (type == RETURN_STMT) {
         return new AcornReturnStmtImpl(node);
@@ -183,6 +207,9 @@ public interface AcornTypes {
       }
       else if (type == STMT) {
         return new AcornStmtImpl(node);
+      }
+      else if (type == STRUCT_DECL_EXPR) {
+        return new AcornStructDeclExprImpl(node);
       }
       else if (type == STRUCT_FIELD) {
         return new AcornStructFieldImpl(node);

@@ -1,4 +1,4 @@
-const math = @import("./math.acorn");
+const math = import!("./math.acorn");
 
 fn slice_test() {
     let arr: [i32] = @slice(1, 2, 3);

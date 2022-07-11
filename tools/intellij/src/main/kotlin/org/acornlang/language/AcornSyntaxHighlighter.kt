@@ -30,11 +30,12 @@ class AcornSyntaxHighlighter : SyntaxHighlighterBase() {
         val EMPTY_KEYS = arrayOf<TextAttributesKey>()
 
         val KEYWORDS = listOf(
-            AcornTypes.CONST, AcornTypes.ELSE, AcornTypes.ENUM,
+            AcornTypes.BREAK,
+            AcornTypes.CONST, AcornTypes.CONTINUE, AcornTypes.ELSE, AcornTypes.ENUM,
             AcornTypes.FALSE, AcornTypes.FN, AcornTypes.FOREIGN,
             AcornTypes.IF, AcornTypes.LET, AcornTypes.MUT,
             AcornTypes.RETURN, AcornTypes.SPEC, AcornTypes.STRUCT,
-            AcornTypes.TRUE, AcornTypes.WHILE,
+            AcornTypes.TRUE, AcornTypes.UNION, AcornTypes.WHILE,
         )
         val OPS = listOf(
             AcornTypes.MINUS, AcornTypes.PLUS, AcornTypes.STAR,

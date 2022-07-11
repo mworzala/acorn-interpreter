@@ -7,9 +7,6 @@ import com.intellij.psi.PsiElement;
 
 public interface AcornUnionField extends PsiElement {
 
-  @Nullable
-  AcornExpr getExpr();
-
   @NotNull
   PsiElement getIdent();
 

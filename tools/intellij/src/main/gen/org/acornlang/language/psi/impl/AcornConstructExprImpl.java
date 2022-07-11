@@ -33,10 +33,4 @@ public class AcornConstructExprImpl extends AcornExprImpl implements AcornConstr
     return PsiTreeUtil.getChildrenOfTypeAsList(this, AcornConstructArg.class);
   }
 
-  @Override
-  @NotNull
-  public AcornExpr getExpr() {
-    return findNotNullChildByClass(AcornExpr.class);
-  }
-
 }

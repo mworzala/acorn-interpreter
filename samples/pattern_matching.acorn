@@ -1,5 +1,5 @@
 
-foreign fn puts(s: *i8) i32;
+fn puts(s: str) i32;
 
 enum Color {
     red,
@@ -19,7 +19,7 @@ union AUnion {
     float: f32,
 }
 
-fn color_to_string(color: Color) *i8 {
+fn color_to_string(color: Color) str {
     match a_union {
         Int(i) => ...
         Float(f) => ...

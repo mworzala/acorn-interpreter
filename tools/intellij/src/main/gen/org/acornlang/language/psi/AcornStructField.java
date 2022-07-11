@@ -7,9 +7,6 @@ import com.intellij.psi.PsiElement;
 
 public interface AcornStructField extends PsiElement {
 
-  @Nullable
-  AcornExpr getExpr();
-
   @NotNull
   PsiElement getIdent();
 

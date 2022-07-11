@@ -27,10 +27,4 @@ public class AcornTupleExprUpperImpl extends ASTWrapperPsiElement implements Aco
     else super.accept(visitor);
   }
 
-  @Override
-  @NotNull
-  public List<AcornExpr> getExprList() {
-    return PsiTreeUtil.getChildrenOfTypeAsList(this, AcornExpr.class);
-  }
-
 }

@@ -7,9 +7,6 @@ import com.intellij.psi.PsiElement;
 
 public interface AcornVarDeclStmt extends AcornStmt {
 
-  @NotNull
-  List<AcornExpr> getExprList();
-
   @Nullable
   PsiElement getIdent();
 

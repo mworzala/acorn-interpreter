@@ -27,10 +27,4 @@ public class AcornParenOrTupleExprImpl extends AcornExprImpl implements AcornPar
     else super.accept(visitor);
   }
 
-  @Override
-  @NotNull
-  public AcornExpr getExpr() {
-    return findNotNullChildByClass(AcornExpr.class);
-  }
-
 }

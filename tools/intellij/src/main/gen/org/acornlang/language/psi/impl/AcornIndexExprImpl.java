@@ -29,8 +29,8 @@ public class AcornIndexExprImpl extends AcornExprImpl implements AcornIndexExpr 
 
   @Override
   @NotNull
-  public List<AcornExpr> getExprList() {
-    return PsiTreeUtil.getChildrenOfTypeAsList(this, AcornExpr.class);
+  public AcornExpr getExpr() {
+    return findNotNullChildByClass(AcornExpr.class);
   }
 
 }

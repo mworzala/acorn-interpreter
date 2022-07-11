@@ -7,7 +7,4 @@ import com.intellij.psi.PsiElement;
 
 public interface AcornParenOrTupleExpr extends AcornExpr {
 
-  @NotNull
-  AcornExpr getExpr();
-
 }

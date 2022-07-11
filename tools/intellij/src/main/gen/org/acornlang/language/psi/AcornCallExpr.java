@@ -8,6 +8,6 @@ import com.intellij.psi.PsiElement;
 public interface AcornCallExpr extends AcornExpr {
 
   @NotNull
-  List<AcornExpr> getExprList();
+  AcornExpr getExpr();
 
 }

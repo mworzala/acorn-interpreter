@@ -7,8 +7,8 @@ import com.intellij.psi.PsiElement;
 
 public interface AcornConstDecl extends AcornContainerItem {
 
-  @NotNull
-  List<AcornExpr> getExprList();
+  @Nullable
+  AcornExpr getExpr();
 
   @Nullable
   PsiElement getIdent();

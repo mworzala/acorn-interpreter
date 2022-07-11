@@ -7,4 +7,7 @@ import com.intellij.psi.PsiElement;
 
 public interface AcornIfExpr extends AcornExpr {
 
+  @NotNull
+  List<AcornExpr> getExprList();
+
 }

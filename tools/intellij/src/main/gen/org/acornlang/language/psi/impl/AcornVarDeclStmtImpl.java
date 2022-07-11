@@ -28,12 +28,6 @@ public class AcornVarDeclStmtImpl extends AcornStmtImpl implements AcornVarDeclS
   }
 
   @Override
-  @NotNull
-  public List<AcornExpr> getExprList() {
-    return PsiTreeUtil.getChildrenOfTypeAsList(this, AcornExpr.class);
-  }
-
-  @Override
   @Nullable
   public PsiElement getIdent() {
     return findChildByType(IDENT);

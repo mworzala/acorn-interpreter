@@ -10,21 +10,27 @@ import com.intellij.psi.util.PsiTreeUtil;
 import static org.acornlang.language.psi.AcornTypes.*;
 import org.acornlang.language.psi.*;
 
-public class AcornArrayExprImpl extends AcornExprImpl implements AcornArrayExpr {
+public class AcornHeadlessSelectExprImpl extends AcornExprImpl implements AcornHeadlessSelectExpr {
 
-  public AcornArrayExprImpl(@NotNull ASTNode node) {
+  public AcornHeadlessSelectExprImpl(@NotNull ASTNode node) {
     super(node);
   }
 
   @Override
   public void accept(@NotNull AcornVisitor visitor) {
-    visitor.visitArrayExpr(this);
+    visitor.visitHeadlessSelectExpr(this);
   }
 
   @Override
   public void accept(@NotNull PsiElementVisitor visitor) {
     if (visitor instanceof AcornVisitor) accept((AcornVisitor)visitor);
     else super.accept(visitor);
+  }
+
+  @Override
+  @Nullable
+  public PsiElement getIdent() {
+    return findChildByType(IDENT);
   }
 
 }

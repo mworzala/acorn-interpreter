@@ -18,14 +18,14 @@ object AcornParserUtil : GeneratedParserUtilBase() {
 
 
     @JvmStatic
-    fun setExprMode(b: PsiBuilder, level: Int, mode: ExprMode): Boolean {
-        b.exprMode = mode
-//        val oldMode = b.exprMode
+    fun setExprMode(b: PsiBuilder, level: Int, mode: ExprMode, parser: Parser): Boolean {
 //        b.exprMode = mode
-//        val result = parser.parse(b, level)
-//        b.exprMode = oldMode
-//        return result
-        return true
+        val oldMode = b.exprMode
+        b.exprMode = mode
+        val result = parser.parse(b, level)
+        b.exprMode = oldMode
+        return result
+//        return true
     }
 
     @JvmStatic

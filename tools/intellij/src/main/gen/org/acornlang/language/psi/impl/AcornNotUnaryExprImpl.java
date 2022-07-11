@@ -10,21 +10,27 @@ import com.intellij.psi.util.PsiTreeUtil;
 import static org.acornlang.language.psi.AcornTypes.*;
 import org.acornlang.language.psi.*;
 
-public class AcornArrayExprImpl extends AcornExprImpl implements AcornArrayExpr {
+public class AcornNotUnaryExprImpl extends AcornExprImpl implements AcornNotUnaryExpr {
 
-  public AcornArrayExprImpl(@NotNull ASTNode node) {
+  public AcornNotUnaryExprImpl(@NotNull ASTNode node) {
     super(node);
   }
 
   @Override
   public void accept(@NotNull AcornVisitor visitor) {
-    visitor.visitArrayExpr(this);
+    visitor.visitNotUnaryExpr(this);
   }
 
   @Override
   public void accept(@NotNull PsiElementVisitor visitor) {
     if (visitor instanceof AcornVisitor) accept((AcornVisitor)visitor);
     else super.accept(visitor);
+  }
+
+  @Override
+  @Nullable
+  public AcornExpr getExpr() {
+    return findChildByClass(AcornExpr.class);
   }
 
 }

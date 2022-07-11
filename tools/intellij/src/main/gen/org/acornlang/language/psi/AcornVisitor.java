@@ -11,6 +11,10 @@ public class AcornVisitor extends PsiElementVisitor {
     visitExpr(o);
   }
 
+  public void visitAssignExpr(@NotNull AcornAssignExpr o) {
+    visitExpr(o);
+  }
+
   public void visitBinaryExpr(@NotNull AcornBinaryExpr o) {
     visitExpr(o);
   }
@@ -71,6 +75,10 @@ public class AcornVisitor extends PsiElementVisitor {
     visitPsiElement(o);
   }
 
+  public void visitHeadlessSelectExpr(@NotNull AcornHeadlessSelectExpr o) {
+    visitExpr(o);
+  }
+
   public void visitIfExpr(@NotNull AcornIfExpr o) {
     visitExpr(o);
   }
@@ -107,7 +115,19 @@ public class AcornVisitor extends PsiElementVisitor {
     visitContainerItem(o);
   }
 
+  public void visitNegateUnaryExpr(@NotNull AcornNegateUnaryExpr o) {
+    visitExpr(o);
+  }
+
+  public void visitNotUnaryExpr(@NotNull AcornNotUnaryExpr o) {
+    visitExpr(o);
+  }
+
   public void visitParenOrTupleExpr(@NotNull AcornParenOrTupleExpr o) {
+    visitExpr(o);
+  }
+
+  public void visitRefUnaryExpr(@NotNull AcornRefUnaryExpr o) {
     visitExpr(o);
   }
 
@@ -121,6 +141,10 @@ public class AcornVisitor extends PsiElementVisitor {
 
   public void visitStmt(@NotNull AcornStmt o) {
     visitPsiElement(o);
+  }
+
+  public void visitStructDeclExpr(@NotNull AcornStructDeclExpr o) {
+    visitExpr(o);
   }
 
   public void visitStructField(@NotNull AcornStructField o) {

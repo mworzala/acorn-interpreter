@@ -5,9 +5,9 @@ import java.util.List;
 import org.jetbrains.annotations.*;
 import com.intellij.psi.PsiElement;
 
-public interface AcornIndexExpr extends AcornExpr {
+public interface AcornHeadlessSelectExpr extends AcornExpr {
 
-  @NotNull
-  AcornExpr getExpr();
+  @Nullable
+  PsiElement getIdent();
 
 }

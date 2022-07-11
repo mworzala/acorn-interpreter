@@ -7,7 +7,4 @@ import com.intellij.psi.PsiElement;
 
 public interface AcornTupleExprUpper extends PsiElement {
 
-  @NotNull
-  List<AcornExpr> getExprList();
-
 }

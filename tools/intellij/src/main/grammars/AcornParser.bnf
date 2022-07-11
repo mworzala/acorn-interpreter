@@ -122,6 +122,7 @@ EnumCase ::= IDENT
 // Struct
 
 NamedStructDecl ::= STRUCT IDENT StructBody { pin=1 }
+StructDeclExpr ::= STRUCT StructBody { pin=1 }
 
 private StructBody ::= LBRACE StructFieldList? RBRACE
 StructFieldList ::= StructField (COMMA (StructField | &RBRACE))*
@@ -156,8 +157,7 @@ Stmt ::= ReturnStmt
        | VarDeclStmt
        | ExtendedExpr
        { recoverWhile=Stmt_recover }
-//todo this is _fine_, but a much better recovery would include all the starting symbols for stmts and exprs. This version does not handle a missing semicolon well
-private Stmt_recover ::= !(SEMI | RBRACE)
+private Stmt_recover ::= Expr_recover
 
 ReturnStmt ::= RETURN ExtendedExpr? { pin=1 }
 BreakStmt ::= BREAK
@@ -173,40 +173,43 @@ Expr ::= WhileExpr
        | IfExpr
        | Block
 
-       | AssignBinExpr
+       | StructDeclExpr
+
+       | AssignExpr
        | TypeUnionExpr
+
        | LogBinExpr
        | CmpBinExpr
        | MulBinExpr
        | AddBinExpr
        | SelectExpr
 
+       | HeadlessSelectExpr
+       | NegateUnaryExpr
+       | NotUnaryExpr
+       | RefUnaryExpr
+
        | PrimaryExpr
-//todo recovery
-
-//private ExtendedExpr ::= <<setExprMode 'ExprMode.EXTENDED' Expr>> {
-//    elementType = Expr
-//    name = "expr"
-//}
-//private LimitedExpr ::= <<setExprMode 'ExprMode.LIMITED' Expr>> {
-//    elementType = Expr
-//    name = "expr"
-////}
+       { recoverWhile=Expr_recover }
+// Includes all starting symbol for exprs and statements to account for missing semicolon cases.
+private Expr_recover ::= !(SEMI | RBRACE)
+//private Expr_recover ::= !(SEMI | RBRACE | AMP | BANG | DOT | FALSE | IDENT | IF
+//                       | INTRINSIC_IDENT | LBRACE | LBRACKET | LPAREN | MINUS
+//                       | NUMBER | STRING | TRUE | WHILE | LET | CONTINUE | BREAK)
 //
-private ExtendedExpr ::= <<setExprMode 'ExprMode.EXTENDED'>> Expr
-private LimitedExpr ::= <<setExprMode 'ExprMode.LIMITED'>> Expr
-//private ExtendedExpr ::= <<setExprMode 'ExprMode.EXTENDED' Expr>> {
-//    elementType = Expr
-//    name = "expr"
-//}
-//private LimitedExpr ::= <<setExprMode 'ExprMode.LIMITED' Expr>> {
-//    elementType = Expr
-//    name = "expr"
-//}
 
-WhileExpr ::= WHILE
-IfExpr ::= IF
+private ExtendedExpr ::= <<setExprMode 'ExprMode.EXTENDED' Expr>>
+private LimitedExpr ::= <<setExprMode 'ExprMode.LIMITED' Expr>>
+
+WhileExpr ::= WHILE LimitedExpr Block
+
+IfExpr ::= IF LimitedExpr Block (ELSE (IfExpr | Block))?
+
 Block ::= LBRACE (Stmt (SEMI (Stmt | &RBRACE))*)? RBRACE
+
+AssignExpr ::= <<checkExtendedMode>> LimitedExpr EQ Expr
+
+TypeUnionExpr ::= Expr AMP Expr
 
 // Binary Expressions
 
@@ -221,11 +224,6 @@ fake BinaryOp ::= EQ | AMP | DOT
                 | EQEQ | BANGEQ | LT | LTEQ | GT | GTEQ
                 | STAR | SLASH | PLUS | MINUS
 
-//todo assign is extended only, otherwise something like `const a: a = 5;` would parse as `a = 5` as the type.
-AssignBinExpr ::= Expr EQ Expr
-
-TypeUnionExpr ::= Expr AMP Expr
-
 
 LogBinExpr ::= Expr LogBinOp Expr
 LogBinOp ::= AMPAMP | BARBAR
@@ -239,11 +237,21 @@ MulBinOp ::= STAR | SLASH
 AddBinExpr ::= Expr AddBinOp Expr
 AddBinOp ::= PLUS | MINUS
 
+//todo combine these
 SelectExpr ::= Expr DOT IDENT
+HeadlessSelectExpr ::= DOT IDENT { pin=1 }
+
+// Prefix expressions
+
+//todo fake UnaryExpr rule
+
+NegateUnaryExpr ::= MINUS Expr { pin=1 }
+NotUnaryExpr ::= BANG Expr { pin=1 }
+
+RefUnaryExpr ::= AMP MUT? Expr { pin=1 }
+
 
 // Primary expressions
-
-// prefix: Minus, Bang, Amp
 
 private PrimaryExpr ::= LiteralExpr
               | ConstructExpr
@@ -266,7 +274,6 @@ ArrayExpr ::= LBRACKET (ExtendedExpr (COMMA (ExtendedExpr | &RBRACKET))*)? RBRAC
 
 IndexExpr ::= Expr LBRACKET ExtendedExpr RBRACKET { pin=2 }
 
-//todo only in some cases
 ConstructExpr ::= <<checkExtendedMode>> LimitedExpr LBRACE ConstructArgList RBRACE { pin=3 }
 private ConstructArgList ::= (ConstructArg (COMMA (ConstructArg | &RBRACE))*)? { pin(".*")=1 }
 ConstructArg ::= IDENT COLON ExtendedExpr { pin=1 }

@@ -28,9 +28,9 @@ public class AcornNamedFnDeclImpl extends AcornContainerItemImpl implements Acor
   }
 
   @Override
-  @NotNull
-  public List<AcornExpr> getExprList() {
-    return PsiTreeUtil.getChildrenOfTypeAsList(this, AcornExpr.class);
+  @Nullable
+  public AcornBlock getBlock() {
+    return findChildByClass(AcornBlock.class);
   }
 
   @Override

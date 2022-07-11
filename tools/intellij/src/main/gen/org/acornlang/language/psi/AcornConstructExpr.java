@@ -10,7 +10,4 @@ public interface AcornConstructExpr extends AcornExpr {
   @NotNull
   List<AcornConstructArg> getConstructArgList();
 
-  @NotNull
-  AcornExpr getExpr();
-
 }

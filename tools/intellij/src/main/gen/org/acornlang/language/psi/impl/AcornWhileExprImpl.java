@@ -27,4 +27,10 @@ public class AcornWhileExprImpl extends AcornExprImpl implements AcornWhileExpr 
     else super.accept(visitor);
   }
 
+  @Override
+  @Nullable
+  public AcornBlock getBlock() {
+    return findChildByClass(AcornBlock.class);
+  }
+
 }

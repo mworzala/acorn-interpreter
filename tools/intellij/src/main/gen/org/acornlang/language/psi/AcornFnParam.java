@@ -7,9 +7,6 @@ import com.intellij.psi.PsiElement;
 
 public interface AcornFnParam extends PsiElement {
 
-  @Nullable
-  AcornExpr getExpr();
-
   @NotNull
   PsiElement getIdent();
 

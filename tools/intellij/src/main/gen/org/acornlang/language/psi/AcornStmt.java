@@ -7,7 +7,4 @@ import com.intellij.psi.PsiElement;
 
 public interface AcornStmt extends PsiElement {
 
-  @Nullable
-  AcornExpr getExpr();
-
 }

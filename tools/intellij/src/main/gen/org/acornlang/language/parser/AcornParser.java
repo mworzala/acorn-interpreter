@@ -40,10 +40,12 @@ public class AcornParser implements PsiParser, LightPsiParser {
       VAR_DECL_STMT),
     create_token_set_(CONST_DECL, CONTAINER_ITEM, NAMED_ENUM_DECL, NAMED_FN_DECL,
       NAMED_SPEC_DECL, NAMED_STRUCT_DECL, NAMED_UNION_DECL),
-    create_token_set_(ARRAY_EXPR, BINARY_EXPR, BLOCK, CALL_EXPR,
-      CONSTRUCT_EXPR, EXPR, IF_EXPR, INDEX_EXPR,
-      INTRINSIC_REF_EXPR, LITERAL_EXPR, PAREN_EXPR, SELECT_EXPR,
-      TYPE_UNION_EXPR, VAR_REF_EXPR, WHILE_EXPR),
+    create_token_set_(ARRAY_EXPR, ASSIGN_EXPR, BINARY_EXPR, BLOCK,
+      CALL_EXPR, CONSTRUCT_EXPR, EXPR, HEADLESS_SELECT_EXPR,
+      IF_EXPR, INDEX_EXPR, INTRINSIC_REF_EXPR, LITERAL_EXPR,
+      NEGATE_UNARY_EXPR, NOT_UNARY_EXPR, PAREN_EXPR, REF_UNARY_EXPR,
+      SELECT_EXPR, STRUCT_DECL_EXPR, TYPE_UNION_EXPR, VAR_REF_EXPR,
+      WHILE_EXPR),
   };
 
   /* ********************************************************** */
@@ -411,15 +413,29 @@ public class AcornParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // <<setExprMode 'ExprMode.EXTENDED'>> Expr
-  static boolean ExtendedExpr(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "ExtendedExpr")) return false;
+  // !(SEMI | RBRACE)
+  static boolean Expr_recover(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "Expr_recover")) return false;
     boolean r;
-    Marker m = enter_section_(b);
-    r = setExprMode(b, l + 1, ExprMode.EXTENDED);
-    r = r && Expr(b, l + 1, -1);
-    exit_section_(b, m, null, r);
+    Marker m = enter_section_(b, l, _NOT_);
+    r = !Expr_recover_0(b, l + 1);
+    exit_section_(b, l, m, r, false, null);
     return r;
+  }
+
+  // SEMI | RBRACE
+  private static boolean Expr_recover_0(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "Expr_recover_0")) return false;
+    boolean r;
+    r = consumeToken(b, SEMI);
+    if (!r) r = consumeToken(b, RBRACE);
+    return r;
+  }
+
+  /* ********************************************************** */
+  // <<setExprMode 'ExprMode.EXTENDED' Expr>>
+  static boolean ExtendedExpr(PsiBuilder b, int l) {
+    return setExprMode(b, l + 1, ExprMode.EXTENDED, Expr_parser_);
   }
 
   /* ********************************************************** */
@@ -588,15 +604,9 @@ public class AcornParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // <<setExprMode 'ExprMode.LIMITED'>> Expr
+  // <<setExprMode 'ExprMode.LIMITED' Expr>>
   static boolean LimitedExpr(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "LimitedExpr")) return false;
-    boolean r;
-    Marker m = enter_section_(b);
-    r = setExprMode(b, l + 1, ExprMode.LIMITED);
-    r = r && Expr(b, l + 1, -1);
-    exit_section_(b, m, null, r);
-    return r;
+    return setExprMode(b, l + 1, ExprMode.LIMITED, Expr_parser_);
   }
 
   /* ********************************************************** */
@@ -771,23 +781,9 @@ public class AcornParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // !(SEMI | RBRACE)
+  // Expr_recover
   static boolean Stmt_recover(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "Stmt_recover")) return false;
-    boolean r;
-    Marker m = enter_section_(b, l, _NOT_);
-    r = !Stmt_recover_0(b, l + 1);
-    exit_section_(b, l, m, r, false, null);
-    return r;
-  }
-
-  // SEMI | RBRACE
-  private static boolean Stmt_recover_0(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "Stmt_recover_0")) return false;
-    boolean r;
-    r = consumeToken(b, SEMI);
-    if (!r) r = consumeToken(b, RBRACE);
-    return r;
+    return Expr_recover(b, l + 1);
   }
 
   /* ********************************************************** */
@@ -1149,17 +1145,22 @@ public class AcornParser implements PsiParser, LightPsiParser {
   /* ********************************************************** */
   // Expression root: Expr
   // Operator priority table:
-  // 0: ATOM(WhileExpr)
+  // 0: PREFIX(WhileExpr)
   // 1: ATOM(IfExpr)
   // 2: ATOM(Block)
-  // 3: BINARY(AssignBinExpr)
-  // 4: BINARY(TypeUnionExpr)
-  // 5: BINARY(LogBinExpr)
-  // 6: BINARY(CmpBinExpr)
-  // 7: BINARY(MulBinExpr)
-  // 8: BINARY(AddBinExpr)
-  // 9: POSTFIX(SelectExpr)
-  // 10: ATOM(LiteralExpr) ATOM(ConstructExpr) ATOM(VarRefExpr) ATOM(IntrinsicRefExpr)
+  // 3: ATOM(StructDeclExpr)
+  // 4: PREFIX(AssignExpr)
+  // 5: BINARY(TypeUnionExpr)
+  // 6: BINARY(LogBinExpr)
+  // 7: BINARY(CmpBinExpr)
+  // 8: BINARY(MulBinExpr)
+  // 9: BINARY(AddBinExpr)
+  // 10: POSTFIX(SelectExpr)
+  // 11: ATOM(HeadlessSelectExpr)
+  // 12: ATOM(NegateUnaryExpr)
+  // 13: ATOM(NotUnaryExpr)
+  // 14: ATOM(RefUnaryExpr)
+  // 15: ATOM(LiteralExpr) ATOM(ConstructExpr) ATOM(VarRefExpr) ATOM(IntrinsicRefExpr)
   //    ATOM(ParenOrTupleExpr) ATOM(ArrayExpr) POSTFIX(IndexExpr) POSTFIX(CallExpr)
   public static boolean Expr(PsiBuilder b, int l, int g) {
     if (!recursion_guard_(b, l, "Expr")) return false;
@@ -1169,6 +1170,12 @@ public class AcornParser implements PsiParser, LightPsiParser {
     r = WhileExpr(b, l + 1);
     if (!r) r = IfExpr(b, l + 1);
     if (!r) r = Block(b, l + 1);
+    if (!r) r = StructDeclExpr(b, l + 1);
+    if (!r) r = AssignExpr(b, l + 1);
+    if (!r) r = HeadlessSelectExpr(b, l + 1);
+    if (!r) r = NegateUnaryExpr(b, l + 1);
+    if (!r) r = NotUnaryExpr(b, l + 1);
+    if (!r) r = RefUnaryExpr(b, l + 1);
     if (!r) r = LiteralExpr(b, l + 1);
     if (!r) r = ConstructExpr(b, l + 1);
     if (!r) r = VarRefExpr(b, l + 1);
@@ -1186,39 +1193,35 @@ public class AcornParser implements PsiParser, LightPsiParser {
     boolean r = true;
     while (true) {
       Marker m = enter_section_(b, l, _LEFT_, null);
-      if (g < 3 && consumeTokenSmart(b, EQ)) {
-        r = Expr(b, l, 3);
-        exit_section_(b, l, m, BINARY_EXPR, r, true, null);
-      }
-      else if (g < 4 && consumeTokenSmart(b, AMP)) {
-        r = Expr(b, l, 4);
+      if (g < 5 && consumeTokenSmart(b, AMP)) {
+        r = Expr(b, l, 5);
         exit_section_(b, l, m, TYPE_UNION_EXPR, r, true, null);
       }
-      else if (g < 5 && LogBinOp(b, l + 1)) {
-        r = Expr(b, l, 5);
-        exit_section_(b, l, m, BINARY_EXPR, r, true, null);
-      }
-      else if (g < 6 && CmpBinOp(b, l + 1)) {
+      else if (g < 6 && LogBinOp(b, l + 1)) {
         r = Expr(b, l, 6);
         exit_section_(b, l, m, BINARY_EXPR, r, true, null);
       }
-      else if (g < 7 && MulBinOp(b, l + 1)) {
+      else if (g < 7 && CmpBinOp(b, l + 1)) {
         r = Expr(b, l, 7);
         exit_section_(b, l, m, BINARY_EXPR, r, true, null);
       }
-      else if (g < 8 && AddBinOp(b, l + 1)) {
+      else if (g < 8 && MulBinOp(b, l + 1)) {
         r = Expr(b, l, 8);
         exit_section_(b, l, m, BINARY_EXPR, r, true, null);
       }
-      else if (g < 9 && parseTokensSmart(b, 0, DOT, IDENT)) {
+      else if (g < 9 && AddBinOp(b, l + 1)) {
+        r = Expr(b, l, 9);
+        exit_section_(b, l, m, BINARY_EXPR, r, true, null);
+      }
+      else if (g < 10 && parseTokensSmart(b, 0, DOT, IDENT)) {
         r = true;
         exit_section_(b, l, m, SELECT_EXPR, r, true, null);
       }
-      else if (g < 10 && IndexExpr_0(b, l + 1)) {
+      else if (g < 15 && IndexExpr_0(b, l + 1)) {
         r = true;
         exit_section_(b, l, m, INDEX_EXPR, r, true, null);
       }
-      else if (g < 10 && CallExpr_0(b, l + 1)) {
+      else if (g < 15 && CallExpr_0(b, l + 1)) {
         r = true;
         exit_section_(b, l, m, CALL_EXPR, r, true, null);
       }
@@ -1230,25 +1233,67 @@ public class AcornParser implements PsiParser, LightPsiParser {
     return r;
   }
 
-  // WHILE
   public static boolean WhileExpr(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "WhileExpr")) return false;
     if (!nextTokenIsSmart(b, WHILE)) return false;
+    boolean r, p;
+    Marker m = enter_section_(b, l, _NONE_, null);
+    r = WhileExpr_0(b, l + 1);
+    p = r;
+    r = p && Expr(b, l, 1);
+    exit_section_(b, l, m, WHILE_EXPR, r, p, null);
+    return r || p;
+  }
+
+  // WHILE LimitedExpr
+  private static boolean WhileExpr_0(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "WhileExpr_0")) return false;
     boolean r;
     Marker m = enter_section_(b);
     r = consumeTokenSmart(b, WHILE);
-    exit_section_(b, m, WHILE_EXPR, r);
+    r = r && LimitedExpr(b, l + 1);
+    exit_section_(b, m, null, r);
     return r;
   }
 
-  // IF
+  // IF LimitedExpr Block (ELSE (IfExpr | Block))?
   public static boolean IfExpr(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "IfExpr")) return false;
     if (!nextTokenIsSmart(b, IF)) return false;
     boolean r;
     Marker m = enter_section_(b);
     r = consumeTokenSmart(b, IF);
+    r = r && LimitedExpr(b, l + 1);
+    r = r && Block(b, l + 1);
+    r = r && IfExpr_3(b, l + 1);
     exit_section_(b, m, IF_EXPR, r);
+    return r;
+  }
+
+  // (ELSE (IfExpr | Block))?
+  private static boolean IfExpr_3(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "IfExpr_3")) return false;
+    IfExpr_3_0(b, l + 1);
+    return true;
+  }
+
+  // ELSE (IfExpr | Block)
+  private static boolean IfExpr_3_0(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "IfExpr_3_0")) return false;
+    boolean r;
+    Marker m = enter_section_(b);
+    r = consumeTokenSmart(b, ELSE);
+    r = r && IfExpr_3_0_1(b, l + 1);
+    exit_section_(b, m, null, r);
+    return r;
+  }
+
+  // IfExpr | Block
+  private static boolean IfExpr_3_0_1(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "IfExpr_3_0_1")) return false;
+    boolean r;
+    r = IfExpr(b, l + 1);
+    if (!r) r = Block(b, l + 1);
     return r;
   }
 
@@ -1324,6 +1369,101 @@ public class AcornParser implements PsiParser, LightPsiParser {
     r = consumeTokenSmart(b, RBRACE);
     exit_section_(b, l, m, r, false, null);
     return r;
+  }
+
+  // STRUCT StructBody
+  public static boolean StructDeclExpr(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "StructDeclExpr")) return false;
+    if (!nextTokenIsSmart(b, STRUCT)) return false;
+    boolean r, p;
+    Marker m = enter_section_(b, l, _NONE_, STRUCT_DECL_EXPR, null);
+    r = consumeTokenSmart(b, STRUCT);
+    p = r; // pin = 1
+    r = r && StructBody(b, l + 1);
+    exit_section_(b, l, m, r, p, null);
+    return r || p;
+  }
+
+  public static boolean AssignExpr(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "AssignExpr")) return false;
+    boolean r, p;
+    Marker m = enter_section_(b, l, _NONE_, null);
+    r = AssignExpr_0(b, l + 1);
+    p = r;
+    r = p && Expr(b, l, 4);
+    exit_section_(b, l, m, ASSIGN_EXPR, r, p, null);
+    return r || p;
+  }
+
+  // <<checkExtendedMode>> LimitedExpr EQ
+  private static boolean AssignExpr_0(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "AssignExpr_0")) return false;
+    boolean r;
+    Marker m = enter_section_(b);
+    r = checkExtendedMode(b, l + 1);
+    r = r && LimitedExpr(b, l + 1);
+    r = r && consumeToken(b, EQ);
+    exit_section_(b, m, null, r);
+    return r;
+  }
+
+  // DOT IDENT
+  public static boolean HeadlessSelectExpr(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "HeadlessSelectExpr")) return false;
+    if (!nextTokenIsSmart(b, DOT)) return false;
+    boolean r, p;
+    Marker m = enter_section_(b, l, _NONE_, HEADLESS_SELECT_EXPR, null);
+    r = consumeTokensSmart(b, 1, DOT, IDENT);
+    p = r; // pin = 1
+    exit_section_(b, l, m, r, p, null);
+    return r || p;
+  }
+
+  // MINUS Expr
+  public static boolean NegateUnaryExpr(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "NegateUnaryExpr")) return false;
+    if (!nextTokenIsSmart(b, MINUS)) return false;
+    boolean r, p;
+    Marker m = enter_section_(b, l, _NONE_, NEGATE_UNARY_EXPR, null);
+    r = consumeTokenSmart(b, MINUS);
+    p = r; // pin = 1
+    r = r && Expr(b, l + 1, -1);
+    exit_section_(b, l, m, r, p, null);
+    return r || p;
+  }
+
+  // BANG Expr
+  public static boolean NotUnaryExpr(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "NotUnaryExpr")) return false;
+    if (!nextTokenIsSmart(b, BANG)) return false;
+    boolean r, p;
+    Marker m = enter_section_(b, l, _NONE_, NOT_UNARY_EXPR, null);
+    r = consumeTokenSmart(b, BANG);
+    p = r; // pin = 1
+    r = r && Expr(b, l + 1, -1);
+    exit_section_(b, l, m, r, p, null);
+    return r || p;
+  }
+
+  // AMP MUT? Expr
+  public static boolean RefUnaryExpr(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "RefUnaryExpr")) return false;
+    if (!nextTokenIsSmart(b, AMP)) return false;
+    boolean r, p;
+    Marker m = enter_section_(b, l, _NONE_, REF_UNARY_EXPR, null);
+    r = consumeTokenSmart(b, AMP);
+    p = r; // pin = 1
+    r = r && report_error_(b, RefUnaryExpr_1(b, l + 1));
+    r = p && Expr(b, l + 1, -1) && r;
+    exit_section_(b, l, m, r, p, null);
+    return r || p;
+  }
+
+  // MUT?
+  private static boolean RefUnaryExpr_1(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "RefUnaryExpr_1")) return false;
+    consumeTokenSmart(b, MUT);
+    return true;
   }
 
   // NUMBER | STRING | TRUE | FALSE
@@ -1498,4 +1638,5 @@ public class AcornParser implements PsiParser, LightPsiParser {
     return r;
   }
 
+  static final Parser Expr_parser_ = (b, l) -> Expr(b, l + 1, -1);
 }
