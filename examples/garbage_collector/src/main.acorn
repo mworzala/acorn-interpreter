@@ -1,0 +1,106 @@
+
+union ObjectKind {
+    Int: i32,
+    Pair: struct {
+        head: &Object,
+        tail: &Object,
+    }
+}
+
+struct Object {
+    marked: bool,
+    next: Option(&Object),
+
+    kind: ObjectKind,
+
+    fn mark(self) void {
+        if self.marked {
+            return;
+        };
+
+        self.marked = true;
+
+        /// This is not going to be the syntax here at all
+        if self.kind.Pair {
+            self.kind.Pair.head.mark();
+            self.kind.Pair.tail.mark();
+        }
+    }
+}
+
+const stack_max = 256;
+
+struct VM {
+    stack: [&Object],
+    stack_size: i32,
+
+    first_obj: Option(&Object),
+
+    fn new() VM {
+        VM {
+            stack: [],
+            stack_size: 0,
+        }
+    }
+
+    fn newObject(self, kind: ObjectKind) &Object {
+        let mem: &Object = malloc(size_of!(Object));
+        mem.marked = false;
+        mem.kind = kind;
+
+        mem.next = self.first_obj;
+        self.first_obj = Some(mem);
+
+        mem
+    }
+
+    fn push(self, obj: Object) void { /// &mut self
+        assert!(self.stack_size < stack_max, "stack overflow");
+        self.stack[self.stack_size] = obj;
+        self.stack_size = self.stack_size + 1;
+    }
+
+    fn pop(self) Object {
+        assert!(self.stack_size > 0, "stack underflow");
+        self.stack_size = self.stack_size - 1;
+        return self.stack[self.stack_size];
+    }
+
+    fn pushInt(self, i: i32) void {
+        self.push(self.newObject(ObjectKind.Int(i)));
+    }
+
+    fn pushPair(self) &Object {
+        let obj = self.newObject(ObjectKind.Pair {
+            head: self.pop(),
+            tail: self.pop(),
+        });
+        self.push(obj);
+        obj
+    }
+
+    fn mark_all(self) void {
+        let mut i = 0;
+        while i < self.stack_size {
+            self.stack[i].mark();
+            i = i + 1;
+        }
+    }
+
+    fn sweep(self) void {
+        /// This whole thing doesnt totally work to remove from the linkedlist.
+        let mut obj = self.first_obj;
+        while let obj = Some(obj) {
+            if !obj.marked {
+                let unreached = obj;
+                obj = unreached.next;
+                free(unreached);
+            } else {
+                obj.marked = false;
+                obj = obj.next;
+            }
+        }
+    }
+}
+
+

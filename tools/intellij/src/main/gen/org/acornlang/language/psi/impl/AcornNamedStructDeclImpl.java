@@ -28,6 +28,12 @@ public class AcornNamedStructDeclImpl extends AcornContainerItemImpl implements 
   }
 
   @Override
+  @NotNull
+  public List<AcornNamedFnDecl> getNamedFnDeclList() {
+    return PsiTreeUtil.getChildrenOfTypeAsList(this, AcornNamedFnDecl.class);
+  }
+
+  @Override
   @Nullable
   public AcornStructFieldList getStructFieldList() {
     return findChildByClass(AcornStructFieldList.class);

@@ -787,7 +787,7 @@ public class AcornParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // LBRACE StructFieldList? RBRACE
+  // LBRACE StructFieldList? NamedFnDecl* RBRACE
   static boolean StructBody(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "StructBody")) return false;
     if (!nextTokenIs(b, LBRACE)) return false;
@@ -795,6 +795,7 @@ public class AcornParser implements PsiParser, LightPsiParser {
     Marker m = enter_section_(b);
     r = consumeToken(b, LBRACE);
     r = r && StructBody_1(b, l + 1);
+    r = r && StructBody_2(b, l + 1);
     r = r && consumeToken(b, RBRACE);
     exit_section_(b, m, null, r);
     return r;
@@ -804,6 +805,17 @@ public class AcornParser implements PsiParser, LightPsiParser {
   private static boolean StructBody_1(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "StructBody_1")) return false;
     StructFieldList(b, l + 1);
+    return true;
+  }
+
+  // NamedFnDecl*
+  private static boolean StructBody_2(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "StructBody_2")) return false;
+    while (true) {
+      int c = current_position_(b);
+      if (!NamedFnDecl(b, l + 1)) break;
+      if (!empty_element_parsed_guard_(b, "StructBody_2", c)) break;
+    }
     return true;
   }
 
@@ -821,58 +833,27 @@ public class AcornParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // StructField (COMMA (StructField | &RBRACE))*
+  // (StructField COMMA)*
   public static boolean StructFieldList(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "StructFieldList")) return false;
-    if (!nextTokenIs(b, IDENT)) return false;
-    boolean r;
-    Marker m = enter_section_(b);
-    r = StructField(b, l + 1);
-    r = r && StructFieldList_1(b, l + 1);
-    exit_section_(b, m, STRUCT_FIELD_LIST, r);
-    return r;
-  }
-
-  // (COMMA (StructField | &RBRACE))*
-  private static boolean StructFieldList_1(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "StructFieldList_1")) return false;
+    Marker m = enter_section_(b, l, _NONE_, STRUCT_FIELD_LIST, "<struct field list>");
     while (true) {
       int c = current_position_(b);
-      if (!StructFieldList_1_0(b, l + 1)) break;
-      if (!empty_element_parsed_guard_(b, "StructFieldList_1", c)) break;
+      if (!StructFieldList_0(b, l + 1)) break;
+      if (!empty_element_parsed_guard_(b, "StructFieldList", c)) break;
     }
+    exit_section_(b, l, m, true, false, null);
     return true;
   }
 
-  // COMMA (StructField | &RBRACE)
-  private static boolean StructFieldList_1_0(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "StructFieldList_1_0")) return false;
-    boolean r;
-    Marker m = enter_section_(b);
-    r = consumeToken(b, COMMA);
-    r = r && StructFieldList_1_0_1(b, l + 1);
-    exit_section_(b, m, null, r);
-    return r;
-  }
-
-  // StructField | &RBRACE
-  private static boolean StructFieldList_1_0_1(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "StructFieldList_1_0_1")) return false;
+  // StructField COMMA
+  private static boolean StructFieldList_0(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "StructFieldList_0")) return false;
     boolean r;
     Marker m = enter_section_(b);
     r = StructField(b, l + 1);
-    if (!r) r = StructFieldList_1_0_1_1(b, l + 1);
+    r = r && consumeToken(b, COMMA);
     exit_section_(b, m, null, r);
-    return r;
-  }
-
-  // &RBRACE
-  private static boolean StructFieldList_1_0_1_1(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "StructFieldList_1_0_1_1")) return false;
-    boolean r;
-    Marker m = enter_section_(b, l, _AND_);
-    r = consumeToken(b, RBRACE);
-    exit_section_(b, l, m, r, false, null);
     return r;
   }
 

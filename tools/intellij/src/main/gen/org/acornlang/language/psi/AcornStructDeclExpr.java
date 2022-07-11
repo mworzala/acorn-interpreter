@@ -7,6 +7,9 @@ import com.intellij.psi.PsiElement;
 
 public interface AcornStructDeclExpr extends AcornExpr {
 
+  @NotNull
+  List<AcornNamedFnDecl> getNamedFnDeclList();
+
   @Nullable
   AcornStructFieldList getStructFieldList();
 

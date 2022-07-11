@@ -124,8 +124,8 @@ EnumCase ::= IDENT
 NamedStructDecl ::= STRUCT IDENT StructBody { pin=1 }
 StructDeclExpr ::= STRUCT StructBody { pin=1 }
 
-private StructBody ::= LBRACE StructFieldList? RBRACE
-StructFieldList ::= StructField (COMMA (StructField | &RBRACE))*
+private StructBody ::= LBRACE StructFieldList? NamedFnDecl* RBRACE
+StructFieldList ::= (StructField COMMA)*
 
 StructField ::= IDENT COLON LimitedExpr { pin=1 recoverWhile=StructField_recover }
 private StructField_recover ::= !(COMMA | RBRACE) //todo this recovery rule needs to consider that the thing after might be a container item, eg include const/struct/enum/etc here.
