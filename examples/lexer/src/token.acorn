@@ -1,0 +1,31 @@
+
+enum TokenType {
+    lparen, rparen,
+    lbrace, rbrace,
+    lbracket, rbracket,
+    minus, plus, star, slash,
+    eq, eqeq, bang, bangeq,
+    lt, lteq, gt, gteq,
+    amp, ampamp, pipepipe,
+    semicolon, colon, comma, dot, at,
+
+    k_break, k_const, k_continue, k_else, k_enum,
+    k_false, k_fn, k_foreign, k_if, k_let, k_mut,
+    k_return, k_spec, k_struct, k_true, k_union,
+    k_while,
+
+    number, string, ident, intrinsic_ident,
+
+    doc_comment, comment,
+    whitespace, error,
+}
+
+struct Span {
+    start: i32,
+    end: i32,
+}
+
+struct Token {
+    type: TokenType,
+    span: Span,
+}

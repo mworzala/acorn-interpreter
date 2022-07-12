@@ -1,0 +1,111 @@
+const token = import!("./token.acorn");
+const Token = token.Token;
+const TokenType = token.TokenType;
+
+struct Lexer {
+    source: str,
+    start: i32,
+    end: i32,
+
+    fn new(source: str) Lexer {
+        Lexer {
+            source: source,
+            start: 0,
+            end: 0,
+        }
+    }
+
+    fn reset(self: &mut Self) void {
+        self.start = 0;
+        self.end = 0;
+    }
+
+    fn next(self: &mut Self) Option(Token) {
+        self.start = self.cursor;
+
+        if at_end() {
+            return None;
+        };
+
+        let ws = self.whitespace();
+        if ws.is_some() {
+            return ws;
+        };
+
+        let c = self.advance();
+        if is_alpha(c) {
+            self.ident()
+        } else if is_digit(c) {
+            self.number()
+        } else if is_quote(c) {
+            self.string()
+        } else {
+            self.symbol(c)
+        }
+    }
+
+    fn peek(self: &mut Self) Option(Tokent) {
+        let result = self.next();
+        self.cursor = self.start;
+        result
+    }
+
+
+    fn whitespace(self: &mut Self) Option(Token) {
+        todo!()
+    }
+
+    fn ident(self: &mut Self) Option(Token) {
+        while is_alpha(self.peek()) || is_digit(self.peek0()) {
+            self.advance();
+        };
+
+        let result = self.ident_or_keyword();
+        if result != .ident {
+            return token(result);
+        };
+
+        if peek0() == "!" {
+            self.advance();
+            token(.intrinsic_ident)
+        } else {
+            token(.ident)
+        }
+    }
+
+    fn number() Option(Token) {
+        while is_digit(self.peek0()) {
+            self.advance();
+        };
+
+        /// todo: Floating point
+
+        self.token(.number)
+    }
+
+    fn string() Option(Token) {
+        let mut next = self.peek0();
+        while next != "'" && !self.at_end() {
+            self.advance();
+            next = self.peek0();
+        };
+
+        if self.at_end() {
+            return self.token(.error);
+        };
+
+        /// eat closing quote
+        self.advance();
+        self.token(.string)
+    }
+
+    fn symbol(self: &mut Self, c: i8) Option(Token) {
+        if c == "(" {
+            self.token(.lparen)
+        } else if c == ")" {
+            self.token(.rparen)
+        } else {
+            todo!("Can be done without match, should do for now.")
+        }
+    }
+}
