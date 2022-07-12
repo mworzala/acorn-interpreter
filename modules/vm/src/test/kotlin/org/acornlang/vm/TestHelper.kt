@@ -11,7 +11,7 @@ fun createModuleWithSource(source: String): Module {
 
 fun evalExpr(@Language("acorn", prefix = "const a = ", suffix = ";") source: String): Value {
     val module = createModuleWithSource("const a = $source;")
-    return module.getDecl("a")
+    return module.getDecl("a").resolve()
 }
 
 fun evalModuleMain(@Language("acorn") source: String): Value {

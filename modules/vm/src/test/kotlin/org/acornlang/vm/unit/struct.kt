@@ -59,4 +59,48 @@ class TestStructEval {
         assertEquals(1, value.value)
     }
 
+    @Test
+    fun `struct with inner fn decl`() {
+        val source = """
+            {
+                let Vec2 = struct {
+                    x: i32,
+                    y: i32,
+                    
+                    fn length_squared(self) i32 {
+                        self.x * self.x + self.y * self.y
+                    }
+                };
+                let v = Vec2 { x: 3, y: 5 };
+                v.length_squared
+            }
+        """.trimIndent()
+
+        val rawValue = evalExpr(source)
+        val value = rawValue.assert<NativeFnValue>()
+        assertEquals(listOf("self"), value.type.paramNames)
+    }
+
+    @Test
+    fun `struct with inner fn call`() {
+        val source = """
+            {
+                let Vec2 = struct {
+                    x: i32,
+                    y: i32,
+                    
+                    fn length_squared(self) i32 {
+                        self.x * self.x + self.y * self.y
+                    }
+                };
+                let v = Vec2 { x: 3, y: 4 };
+                v.length_squared()
+            }
+        """.trimIndent()
+
+        val rawValue = evalExpr(source)
+        val value = rawValue.assert<IntValue>()
+        assertEquals(25, value.value)
+    }
+
 }

@@ -22,6 +22,8 @@ sealed interface Value {
     fun withType(type: Type): Value
     /** Copy of the value, if `deep == false`, it implements value semantics */
     fun clone(deep: Boolean = false): Value
+
+    open fun resolve(): Value = this
 }
 
 
@@ -267,7 +269,7 @@ class StructValue(
     override fun get(member: String): Value {
         val index = type.memberNames.indexOf(member)
         if (index == -1)
-            throw IllegalArgumentException("No such field: $member")
+            return type.typeDecls.get(member) ?: throw RuntimeException("Member $member not found in $type")
         return values[index]
     }
     override fun set(member: String, value: Value) {
@@ -326,4 +328,16 @@ class TypeValue(
     override fun toString() = "some type" //todo describe the type better
     override fun equals(other: Any?) = this === other || (other is TypeValue && value == other.value)
     override fun hashCode() = value.hashCode()
+}
+
+
+// Other values
+
+
+class OwnedValue(
+    val owner: Value,
+    val value: Value,
+) : Value by value {
+
+    override fun resolve() = value
 }

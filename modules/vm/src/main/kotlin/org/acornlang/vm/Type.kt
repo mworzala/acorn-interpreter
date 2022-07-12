@@ -14,6 +14,17 @@ interface Type {
 }
 
 
+class SelfType(
+    override val isMut: Boolean = false,
+) : Type {
+    override fun asMut() = SelfType(true)
+
+    override fun toString() = mutToString("self")
+    override fun equals(other: Any?) = this === other || other is SelfType
+    override fun hashCode() = Objects.hash(javaClass)
+}
+
+
 class IntType(
     val bits: Int,
     override val isMut: Boolean = false,

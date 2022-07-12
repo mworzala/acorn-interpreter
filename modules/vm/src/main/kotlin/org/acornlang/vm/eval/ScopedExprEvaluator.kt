@@ -10,7 +10,7 @@ class ScopedExprEvaluator(val module: Module) : HirVisitor<Scope, Value> {
         get() = throw UnsupportedOperationException()
 
     private inline fun <reified V : Value, reified T : Type> visitExpectType(node: HirNode, p: Scope): Pair<V, T> {
-        val value = visit(node, p)
+        val value = visit(node, p).resolve()
         if (value !is V)
             throw RuntimeException("Expected ${T::class.simpleName} but got ${value::class.simpleName}")
         if (value.type !is T)
@@ -128,7 +128,7 @@ class ScopedExprEvaluator(val module: Module) : HirVisitor<Scope, Value> {
         val target = visit(memberAccess.target, p)
         if (target !is ContainerValue)
             throw RuntimeException("TypeError: ${target.type} is not a container")
-        return target.get(memberAccess.value)
+        return OwnedValue(target, target.get(memberAccess.value))
     }
 
     override fun visitBlock(block: HirBlock, p: Scope): Value {
@@ -166,13 +166,24 @@ class ScopedExprEvaluator(val module: Module) : HirVisitor<Scope, Value> {
     }
 
     override fun visitCall(call: HirCall, p: Scope): Value {
-        val target = visit(call.target, p)
+        var owner: Value? = null
+        var target = visit(call.target, p)
+        if (target is OwnedValue) {
+            owner = target.owner
+            target = target.value
+        }
         if (target !is FnValue)
             throw RuntimeException("TypeError: expected function, got ${target.type}")
 
         //todo need to snapshot the scope of the function at definition time (with the exception of the base module in
         // that case) so that we can call the function in the correct scope.
-        val args = call.args.map { visit(it, p) }
+        var args = call.args.map { visit(it, p) }
+        if (owner != null && owner !is TypeValue) {
+            // Try to add self arg
+            if (target.type.paramNames[0] != "self")
+                throw RuntimeException("TypeError: expected function with self arg, got ${target.type}")
+            args = listOf(owner) + args
+        }
         return module.call(target, args) //todo need to be careful about where the fn is called. Calling it in the current module is not necessarily correct.
     }
 
@@ -202,7 +213,21 @@ class ScopedExprEvaluator(val module: Module) : HirVisitor<Scope, Value> {
 
     override fun visitFnDecl(fnDecl: HirFnDecl, p: Scope): Value {
         val paramNames = fnDecl.params.map { it.name }
-        val paramTypes = fnDecl.params.map { visit(it.type, p) }.map { (it as TypeValue).value } //todo better errors "expected type, found blah"
+        val paramTypes = mutableListOf<Type>()
+        for ((i, param) in fnDecl.params.withIndex()) {
+            if (i == 0 && param.name == "self") {
+                if (param.type != null)
+                    throw RuntimeException("Self parameter may not specify a type")
+                paramTypes.add(SelfType())
+            } else {
+                if (param.type == null)
+                    throw RuntimeException("Parameter $i has no type.")
+                val typeValue = visit(param.type, p)
+                if (typeValue !is TypeValue)
+                    throw RuntimeException("TypeError: expected type, got ${typeValue.type}")
+                paramTypes.add(typeValue.value)
+            }
+        }
         val retTy = visit(fnDecl.returnType, p)
         if (retTy !is TypeValue)
             throw RuntimeException("Expected type, found $retTy")
@@ -249,6 +274,20 @@ class ScopedExprEvaluator(val module: Module) : HirVisitor<Scope, Value> {
         return TypeValue(TypeType(), type)
     }
     override fun visitStructField(structField: HirStructField, p: Scope): Value {
+        throw NotImplementedError("Struct fields are handled by decl")
+    }
+
+    override fun visitUnionDecl(unionDecl: HirUnionDecl, p: Scope): Value {
+        val names = unionDecl.members.map { it.name }
+        //todo somehow need to handle cases where type definitions contain invalid things.
+        // Probably a flag somewhere in here that says if we are in a "comptime" location or not.
+        //todo better error if the result is not a type.
+        val types = unionDecl.members.map { (visit(it.type, p) as TypeValue).value }
+
+        val type = UnionType("unnamed", names, types)
+        return TypeValue(TypeType(), type)
+    }
+    override fun visitUnionMember(unionMember: HirUnionMember, p: Scope): Value {
         throw NotImplementedError("Struct fields are handled by decl")
     }
 }
